@@ -1,34 +1,10 @@
-# Dataset
-data/*
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+all: compile run
+compile:
+	g++ main.cpp -o main.out
+run:
+	./main.out
+debug:
+	g++ -g main.cpp -o main.out
+	gdb main.out
+clean:
+	rm *.out

@@ -1,3 +1,4 @@
+#include <bits/stdc++.h> 
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -8,16 +9,17 @@ using namespace std;
 const int NUM_FEATURES = 48 * 48 + 1;
 const int NUM_TRAIN_OBSERVATIONS = 28709 + 1;
 const int NUM_TEST_OBSERVATIONS = 3589*2 + 1;
+const float LEARNING_RATE = 0.01; // TODO: check value
 
-int **allocMatrix(int rows, int cols){
-    int **matrix = (int **)malloc(rows * sizeof(int *)); 
+float **allocMatrix(int rows, int cols){
+    float **matrix = (float **)malloc(rows * sizeof(float *)); 
     for (int i=0; i<rows; i++) 
-         matrix[i] = (int *)malloc(cols * sizeof(int)); 
+         matrix[i] = (float *)malloc(cols * sizeof(float)); 
 
     return matrix;
 }
 
-void freeMatrix(int** matrix, int rows, int cols){
+void freeMatrix(float **matrix, int rows, int cols){
     for(int i=0; i<rows; i++) 
         free(matrix[i]);
     free(matrix);
@@ -33,21 +35,51 @@ void parsePixels(string pixels_str, int *pixels){
     }
 }
 
-void addToDataset(int **X, int *y, int index, int emotion, int* pixels, string usage){
+void initWeights(float *weights){
+    default_random_engine generator;
+    normal_distribution<float> distribution(0.0, 1.0); // mean = 0, stdev = 1
+
+    for(int i = 0; i < NUM_FEATURES; i++){
+        weights[i] = distribution(generator);
+    }
+}
+
+float sigmoid(float z){
+    return 1/(1+exp(-z));
+}
+
+float hipothesys(float weights[NUM_FEATURES], float observation[NUM_FEATURES]){ //observation == xi
+    float sumOfWeightedFeatures = 0;
+
+    for (int i = 0; i < NUM_FEATURES; i++){
+        int weight = weights[i];
+        int feature = observation[i];
+
+        sumOfWeightedFeatures += (weight * feature);
+    }
+
+    return sigmoid(sumOfWeightedFeatures);
+}
+
+void addToDataset(float **X, int *y, int index, int emotion, int* pixels, string usage){
     X[index][0] = 1;
     y[index] = emotion;
 
     for (int i = 1; i <= NUM_FEATURES; i++){
-        X[index][i] = pixels[i-1]; //TODO: normalize pixel valus
+        X[index][i] = pixels[i-1] / 256; // pixels between 0 and 1
     }
 }
 
 int main(){
-    int **X_train, **X_test, *y_train, *y_test;
+    float **X_train, **X_test, *weights;
+    int *y_train, *y_test;
     X_train = allocMatrix(NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);
     X_test = allocMatrix(NUM_TEST_OBSERVATIONS, NUM_FEATURES);
     y_train = (int *)malloc(NUM_TRAIN_OBSERVATIONS * sizeof(int));
     y_test = (int *)malloc(NUM_TEST_OBSERVATIONS * sizeof(int));
+
+    weights = (float *) malloc (NUM_FEATURES * sizeof(float));
+    initWeights(weights);
 
     ifstream inputFile;
     inputFile.open("data/images.csv");
@@ -57,6 +89,7 @@ int main(){
     int a;
     getline(inputFile, line); // skip first line
     
+    // Reading input
     while(getline(inputFile, line)){
         int lastPixelIndex = line.find(",", 2);
         int emotion = line[0] - '0';
@@ -71,8 +104,10 @@ int main(){
             addToDataset(X_train, y_train, index_train, emotion, pixels, usage);
             index_train ++;
         }
-
     }
+
+
+
 
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);
     freeMatrix(X_test, NUM_TEST_OBSERVATIONS, NUM_FEATURES);

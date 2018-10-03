@@ -9,6 +9,8 @@ using namespace std;
 const int NUM_FEATURES = 48 * 48 + 1;
 const int NUM_TRAIN_OBSERVATIONS = 28709 + 1;
 const int NUM_TEST_OBSERVATIONS = 3589*2 + 1;
+const int NUM_EPOCHS = 100;
+const int COST_THRESHOLD = 0.001;
 const float LEARNING_RATE = 0.01; // TODO: check value
 
 float **allocMatrix(int rows, int cols){
@@ -61,25 +63,13 @@ float hipothesys(float weights[NUM_FEATURES], float observation[NUM_FEATURES]){ 
     return sigmoid(sumOfWeightedFeatures);
 }
 
-void addToDataset(float **X, int *y, int index, int emotion, int* pixels, string usage){
+void addToDataset(float **X, float *y, int index, int emotion, int* pixels, string usage){
     X[index][0] = 1;
     y[index] = emotion;
 
-    for (int i = 1; i <= NUM_FEATURES; i++){
+    for (int i = 1; i < NUM_FEATURES; i++){
         X[index][i] = pixels[i-1] / 256; // pixels between 0 and 1
     }
-}
-
-float *updateWeights(float **X_train, float *y_train, float *weights, float *newWeights){
-    
-    for(int i = 0; i <= NUM_FEATURES; i++){
-	newWeights[i] = weights[i] - LEARNING_RATE*gradient(X_train, y_train, weights, i);
-    }
-
-    float *aux;
-    aux = weights;
-    weigths = newWeights;
-    newWeigths = aux;
 }
 
 float gradient(float **X_train, float *y_train, float *weights, int j){
@@ -87,21 +77,47 @@ float gradient(float **X_train, float *y_train, float *weights, int j){
     float *xi;
     float sum = 0;
     
-    for(int i = 0, i < NUM_FEATURES, i++){
-        xi = X_train[i]
+    for(int i = 0; i < NUM_FEATURES; i++){
+        xi = X_train[i];
         h_xi = hipothesys(weights, xi);
         sum += (h_xi - y_train[i])*X_train[i][j];
     }
     return sum;
 }
 
+void updateWeights(float **X_train, float *y_train, float *weights, float *newWeights){
+    
+    for(int i = 0; i < NUM_FEATURES; i++){
+	    newWeights[i] = weights[i] - LEARNING_RATE*gradient(X_train, y_train, weights, i);
+    }
+
+    float *aux;
+    aux = weights;
+    weights = newWeights;
+    newWeights = aux;
+}
+
+float cost_function(float **X_train, float *y_train, float *weights){
+    float cost = 0;
+    float h_xi;
+
+    for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
+        h_xi = hipothesys(weights, X_train[i]);;
+        cost += (-y_train[i]*log( h_xi) - (1-y_train[i])*log(1-h_xi));
+        //cout << "COST "<<cost <<endl;
+    }
+
+    return cost;
+}
+
+
 int main(){
     float **X_train, **X_test, *weights, *newWeights;
-    int *y_train, *y_test;
+    float *y_train, *y_test;
     X_train = allocMatrix(NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);
     X_test = allocMatrix(NUM_TEST_OBSERVATIONS, NUM_FEATURES);
-    y_train = (int *)malloc(NUM_TRAIN_OBSERVATIONS * sizeof(int));
-    y_test = (int *)malloc(NUM_TEST_OBSERVATIONS * sizeof(int));
+    y_train = (float *)malloc(NUM_TRAIN_OBSERVATIONS * sizeof(float));
+    y_test = (float *)malloc(NUM_TEST_OBSERVATIONS * sizeof(float));
 
     weights = (float *) malloc (NUM_FEATURES * sizeof(float));
     initWeights(weights);
@@ -134,8 +150,18 @@ int main(){
     }
 
     inputFile.close();
-
-    updateWeights(X_train, y_train, weights, newWeights);
+    float cost = INT_MAX;
+    float newCost = cost_function(X_train, y_train, weights);
+    int epoch = 0;
+    
+    cout << newCost <<endl;
+    while(epoch < NUM_EPOCHS && newCost-cost > COST_THRESHOLD){
+        cout << "Processando época " << epoch << endl;
+        updateWeights(X_train, y_train, weights, newWeights);
+        cost = newCost;
+        newCost = cost_function(X_train, y_train, weights);
+        epoch ++;
+    }
 
 
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);

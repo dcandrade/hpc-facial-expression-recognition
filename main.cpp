@@ -70,8 +70,33 @@ void addToDataset(float **X, int *y, int index, int emotion, int* pixels, string
     }
 }
 
+float *updateWeights(float **X_train, float *y_train, float *weights, float *newWeights){
+    
+    for(int i = 0; i <= NUM_FEATURES; i++){
+	newWeights[i] = weights[i] - LEARNING_RATE*gradient(X_train, y_train, weights, i);
+    }
+
+    float *aux;
+    aux = weights;
+    weigths = newWeights;
+    newWeigths = aux;
+}
+
+float gradient(float **X_train, float *y_train, float *weights, int j){
+    float h_xi = 0;
+    float *xi;
+    float sum = 0;
+    
+    for(int i = 0, i < NUM_FEATURES, i++){
+        xi = X_train[i]
+        h_xi = hipothesys(weights, xi);
+        sum += (h_xi - y_train[i])*X_train[i][j];
+    }
+    return sum;
+}
+
 int main(){
-    float **X_train, **X_test, *weights;
+    float **X_train, **X_test, *weights, *newWeights;
     int *y_train, *y_test;
     X_train = allocMatrix(NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);
     X_test = allocMatrix(NUM_TEST_OBSERVATIONS, NUM_FEATURES);
@@ -80,6 +105,8 @@ int main(){
 
     weights = (float *) malloc (NUM_FEATURES * sizeof(float));
     initWeights(weights);
+
+    newWeights = (float *) malloc (NUM_FEATURES * sizeof(float));
 
     ifstream inputFile;
     inputFile.open("data/images.csv");
@@ -106,7 +133,9 @@ int main(){
         }
     }
 
+    inputFile.close();
 
+    updateWeights(X_train, y_train, weights, newWeights);
 
 
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);

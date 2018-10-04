@@ -3,59 +3,62 @@
 #include <iostream>
 #include <string>
 #include <sstream> 
+#include <math.h> 
 
 using namespace std;
 
 const int NUM_FEATURES = 48 * 48 + 1;
-const int NUM_TRAIN_OBSERVATIONS = 28709 + 1;
-const int NUM_TEST_OBSERVATIONS = 3589*2 + 1;
+const int NUM_TRAIN_OBSERVATIONS = 3995 + 4097 + 1; //emotion 0 + emotion 2
+const int NUM_TEST_OBSERVATIONS = 958 + 1054 + 1;
 const int NUM_EPOCHS = 100;
 const int COST_THRESHOLD = 0.001;
-const float LEARNING_RATE = 0.01; // TODO: check value
+const double LEARNING_RATE = 0.1; // TODO: check value
 
-float **allocMatrix(int rows, int cols){
-    float **matrix = (float **)malloc(rows * sizeof(float *)); 
+double **allocMatrix(int rows, int cols){
+    double **matrix = (double **)malloc(rows * sizeof(double *)); 
     for (int i=0; i<rows; i++) 
-         matrix[i] = (float *)malloc(cols * sizeof(float)); 
+         matrix[i] = (double *)malloc(cols * sizeof(double)); 
 
     return matrix;
 }
 
-void freeMatrix(float **matrix, int rows, int cols){
+void freeMatrix(double **matrix, int rows, int cols){
     for(int i=0; i<rows; i++) 
         free(matrix[i]);
     free(matrix);
 }
 
-void parsePixels(string pixels_str, int *pixels){
+void parsePixels(string pixels_str, double *pixels){
     stringstream ss(pixels_str);
-    int pixel, i=0;
+    double pixel;
+    int i=0;
     
     while(ss >> pixel){
-        pixels[i] = pixel;
+        pixels[i] = pixel / 255;
         i++;
     }
 }
 
-void initWeights(float *weights){
-    default_random_engine generator;
-    normal_distribution<float> distribution(0.0, 1.0); // mean = 0, stdev = 1
+void initWeights(double *weights){
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator (seed);
+    uniform_real_distribution<> distribution(0.0, 1.0); // min = 0, max = 1
 
     for(int i = 0; i < NUM_FEATURES; i++){
         weights[i] = distribution(generator);
     }
 }
 
-float sigmoid(float z){
-    return 1/(1+exp(-z));
+double sigmoid(double z){
+    return 1.0/(1.0+exp(-z));
 }
 
-float hipothesys(float weights[NUM_FEATURES], float observation[NUM_FEATURES]){ //observation == xi
-    float sumOfWeightedFeatures = 0;
+double hipothesys(double *weights, double *observation){ //observation == xi
+    double sumOfWeightedFeatures = 0, weight, feature;
 
     for (int i = 0; i < NUM_FEATURES; i++){
-        int weight = weights[i];
-        int feature = observation[i];
+        weight = weights[i];
+        feature = observation[i];
 
         sumOfWeightedFeatures += (weight * feature);
     }
@@ -63,72 +66,75 @@ float hipothesys(float weights[NUM_FEATURES], float observation[NUM_FEATURES]){ 
     return sigmoid(sumOfWeightedFeatures);
 }
 
-void addToDataset(float **X, float *y, int index, int emotion, int* pixels, string usage){
+void addToDataset(double **X, int *y, int index, int emotion, double* pixels, string usage){
     X[index][0] = 1;
     y[index] = emotion;
 
     for (int i = 1; i < NUM_FEATURES; i++){
-        X[index][i] = pixels[i-1] / 256; // pixels between 0 and 1
+        X[index][i] = pixels[i-1]; // pixels between 0 and 1
     }
 }
 
-float gradient(float **X_train, float *y_train, float *weights, int j){
-    float h_xi = 0;
-    float *xi;
-    float sum = 0;
+double gradient(double **X_train, int *y_train, double *weights, int j){
+    double h_xi = 0;
+    double *xi;
+    double sum = 0;
     
-    for(int i = 0; i < NUM_FEATURES; i++){
+    for(int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
         xi = X_train[i];
         h_xi = hipothesys(weights, xi);
-        sum += (h_xi - y_train[i])*X_train[i][j];
+        sum += (h_xi - y_train[i])*xi[j];
     }
-    return sum;
+    return (-1/NUM_TRAIN_OBSERVATIONS) * sum;
 }
 
-void updateWeights(float **X_train, float *y_train, float *weights, float *newWeights){
+void updateWeights(double **X_train, int *y_train, double *weights, double *newWeights){
     
     for(int i = 0; i < NUM_FEATURES; i++){
-	    newWeights[i] = weights[i] - LEARNING_RATE*gradient(X_train, y_train, weights, i);
+	    newWeights[i] = weights[i] - (LEARNING_RATE * gradient(X_train, y_train, weights, i));
     }
 
-    float *aux;
-    aux = weights;
-    weights = newWeights;
-    newWeights = aux;
+    for(int i = 0; i < NUM_FEATURES; i++){
+        weights[i] = newWeights[i];
+    }
 }
 
-float cost_function(float **X_train, float *y_train, float *weights){
-    float cost = 0;
-    float h_xi;
+double cost_function(double **X_train, int *y_train, double *weights){
+    double cost = 0;
+    double h_xi;
 
     for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-        h_xi = hipothesys(weights, X_train[i]);;
-        cost += (-y_train[i]*log( h_xi) - (1-y_train[i])*log(1-h_xi));
-        //cout << "COST "<<cost <<endl;
+        h_xi = hipothesys(weights, X_train[i]);
+        if(y_train[i] == 1){
+            cost +=  y_train[i] * log(h_xi);
+        }else{
+            cost +=  (1-y_train[i]) * log(1-h_xi);
+        }
+        //cost += ((-y_train[i]*log(h_xi)) - ((1-y_train[i])*log(1-h_xi)));
     }
 
-    return cost;
+    return (-1/NUM_TRAIN_OBSERVATIONS) * cost;
 }
 
 
 int main(){
-    float **X_train, **X_test, *weights, *newWeights;
-    float *y_train, *y_test;
+    double **X_train, **X_test, *weights, *newWeights;
+    int *y_train, *y_test;
     X_train = allocMatrix(NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);
     X_test = allocMatrix(NUM_TEST_OBSERVATIONS, NUM_FEATURES);
-    y_train = (float *)malloc(NUM_TRAIN_OBSERVATIONS * sizeof(float));
-    y_test = (float *)malloc(NUM_TEST_OBSERVATIONS * sizeof(float));
+    y_train = (int *)malloc(NUM_TRAIN_OBSERVATIONS * sizeof(int));
+    y_test = (int *)malloc(NUM_TEST_OBSERVATIONS * sizeof(int));
 
-    weights = (float *) malloc (NUM_FEATURES * sizeof(float));
+    weights = (double *) malloc (NUM_FEATURES * sizeof(double));
     initWeights(weights);
 
-    newWeights = (float *) malloc (NUM_FEATURES * sizeof(float));
+    newWeights = (double *) malloc (NUM_FEATURES * sizeof(double));
 
     ifstream inputFile;
     inputFile.open("data/images.csv");
     string line;
     int index_train = 0, index_test = 0;
-    int pixels[48*48];
+    double pixels[48*48];
     int a;
     getline(inputFile, line); // skip first line
     
@@ -140,29 +146,46 @@ int main(){
         string usage = line.substr(lastPixelIndex+1);
         parsePixels(pixels_str, pixels);
 
-        if(usage.compare("Training") != 0){
-            addToDataset(X_test, y_test, index_test, emotion, pixels, usage);
-            index_test ++;
-        }else{
-            addToDataset(X_train, y_train, index_train, emotion, pixels, usage);
-            index_train ++;
+        if(emotion == 0 || emotion == 2){
+                emotion = round(emotion / 2);
+            if(usage.compare("Training") != 0){
+                addToDataset(X_test, y_test, index_test, emotion, pixels, usage);
+                index_test ++;
+            }else{
+                addToDataset(X_train, y_train, index_train, emotion, pixels, usage);
+                index_train ++;
+            }
         }
     }
 
     inputFile.close();
-    float cost = INT_MAX;
-    float newCost = cost_function(X_train, y_train, weights);
+    double cost = INT_MAX;
+    double newCost = cost_function(X_train, y_train, weights);
     int epoch = 0;
     
-    cout << newCost <<endl;
-    while(epoch < NUM_EPOCHS && newCost-cost > COST_THRESHOLD){
-        cout << "Processando época " << epoch << endl;
+    while(epoch < NUM_EPOCHS){
+        double predictions[NUM_TEST_OBSERVATIONS], pred;
+        int correct = 0;
+        for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
+            pred = round(hipothesys(weights, X_test[i]));
+            predictions[i] = pred;
+            if(pred == y_test[i]){
+                correct ++;
+            }
+        }
+
+        cout<<"correct: "<<correct<<" wrong: "<<NUM_TEST_OBSERVATIONS-correct << " " <<((float)correct/NUM_TEST_OBSERVATIONS)*100<<"%"<<endl;
+
+
+
+        cout << "Processando época: " << epoch << ", Custo: " <<cost<< endl;
         updateWeights(X_train, y_train, weights, newWeights);
         cost = newCost;
         newCost = cost_function(X_train, y_train, weights);
         epoch ++;
     }
 
+    
 
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);
     freeMatrix(X_test, NUM_TEST_OBSERVATIONS, NUM_FEATURES);

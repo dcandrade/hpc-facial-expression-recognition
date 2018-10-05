@@ -108,8 +108,28 @@ void updateWeights(double **X_train, int *y_train, double *weights, double *newW
     }
 }
 
-void saveEpoch(int epoch, ofstream outputFile, double* predictions, int size){
+void saveEpoch(int epoch, ofstream outputFile, int *predictions, int *y, int size){
     double accuracy, precision, recall, f1;
+    int tp = 0, tn = 0, fp = 0, fn = 0;
+    
+    for(int i = 0, i < size, i++){
+        if(predictions[i] == 0 && y[i] == 0){
+                tn++;
+        else if(predictions[i] == 0 && y[i] == 1){
+                fn++;
+        else if(predictions[i] == 1 && y[i] == 0){
+                fp++;
+        else{
+                tp++;
+        }    
+    }
+    
+    accuracy = (tp + tn)/(tp + fp + fn + tn);
+    precision = tp/(tp + fp);
+    recall = tp/(tp + fn);
+    f1 = (2*recall*precision)/(recall + precision);
+    
+    outputFile << epoch << ',' << accuracy << ',' << precision << ',' << recall << ',' << f1 << endl;
 
     
 }
@@ -179,6 +199,8 @@ int main(){
 
         cout<<"Correct: "<<correct<<", Wrong: "<<NUM_TRAIN_OBSERVATIONS-correct << ", Accuracy: " <<((float)correct/NUM_TRAIN_OBSERVATIONS)*100<<"%"<<endl;
         cout << "Processando época: " << epoch << endl;
+        
+        saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS);
 
         updateWeights(X_train, y_train, weights, newWeights);
         cost = newCost;

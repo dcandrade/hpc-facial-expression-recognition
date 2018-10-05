@@ -108,20 +108,19 @@ void updateWeights(double **X_train, int *y_train, double *weights, double *newW
     }
 }
 
-void saveEpoch(int epoch, ofstream outputFile, int *predictions, int *y, int size){
+void saveEpoch(int epoch, ofstream &outputFile, int *predictions, int *y, int size, double cost){
     double accuracy, precision, recall, f1;
     int tp = 0, tn = 0, fp = 0, fn = 0;
     
-    for(int i = 0, i < size, i++){
-        if(predictions[i] == 0 && y[i] == 0){
+    for(int i = 0; i < size; i++){
+        if(predictions[i] == 0 && y[i] == 0)
                 tn++;
-        else if(predictions[i] == 0 && y[i] == 1){
+        else if(predictions[i] == 0 && y[i] == 1)
                 fn++;
-        else if(predictions[i] == 1 && y[i] == 0){
+        else if(predictions[i] == 1 && y[i] == 0)
                 fp++;
-        else{
+        else
                 tp++;
-        }    
     }
     
     accuracy = (tp + tn)/(tp + fp + fn + tn);
@@ -129,9 +128,7 @@ void saveEpoch(int epoch, ofstream outputFile, int *predictions, int *y, int siz
     recall = tp/(tp + fn);
     f1 = (2*recall*precision)/(recall + precision);
     
-    outputFile << epoch << ',' << accuracy << ',' << precision << ',' << recall << ',' << f1 << endl;
-
-    
+    outputFile << epoch << ',' << accuracy << ',' << precision << ',' << recall << ',' << f1 << ',' << cost << endl;
 }
 
 int main(){
@@ -143,20 +140,19 @@ int main(){
     y_test = (int *)malloc(NUM_TEST_OBSERVATIONS * sizeof(int));
 
     weights = (double *) malloc (NUM_FEATURES * sizeof(double));
-    initWeights(weights);
-
     newWeights = (double *) malloc (NUM_FEATURES * sizeof(double));
+    initWeights(weights);
 
     ifstream inputFile;
     ofstream outputFile;
     inputFile.open("data/images.csv");
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     outputFile.open("results/output" + seed);
-    outputFile << "#epoch accuracy precision recall f1" << endl;
+    outputFile << "#epoch accuracy precision recall f1 cost" << endl;
     string line;
+    
     int index_train = 0, index_test = 0;
     double pixels[48*48];
-    int a;
     getline(inputFile, line); // skip first line
     
     // Reading input
@@ -185,7 +181,7 @@ int main(){
     int epoch = 0;
     
     while(epoch < NUM_EPOCHS){
-        double predictions[NUM_TRAIN_OBSERVATIONS], pred;
+        int predictions[NUM_TRAIN_OBSERVATIONS], pred;
         int correct = 0;
         int h;
         for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
@@ -197,10 +193,10 @@ int main(){
             }
         }
 
-        cout<<"Correct: "<<correct<<", Wrong: "<<NUM_TRAIN_OBSERVATIONS-correct << ", Accuracy: " <<((float)correct/NUM_TRAIN_OBSERVATIONS)*100<<"%"<<endl;
+        cout<<"Correct: "<<correct<<", Wrong: "<<NUM_TRAIN_OBSERVATIONS-correct << ", Accuracy: " <<((float)correct/NUM_TRAIN_OBSERVATIONS)*100<<"%, Cost: "<<cost<<endl;
         cout << "Processando época: " << epoch << endl;
         
-        saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS);
+        saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost);
 
         updateWeights(X_train, y_train, weights, newWeights);
         cost = newCost;
@@ -208,19 +204,21 @@ int main(){
         epoch ++;
     }
 
-    // tests
-
-        double predictions[NUM_TEST_OBSERVATIONS], pred;
-        int correct = 0;
-        int h;
-        for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
-            h = hipothesys(weights, X_test[i]);
-            pred = round(h);
-            predictions[i] = pred;
-            if(pred == y_test[i]){
-                correct ++;
-            }
+    // Run tests
+    int predictions[NUM_TEST_OBSERVATIONS], pred;
+    int correct = 0;
+    int h;
+    for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
+        h = hipothesys(weights, X_test[i]);
+        pred = round(h);
+        predictions[i] = pred;
+        if(pred == y_test[i]){
+            correct ++;
         }
+    }
+
+    saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1);
+
 
     outputFile.close();
 

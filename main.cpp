@@ -39,10 +39,19 @@ void parsePixels(string pixels_str, double *pixels){
     }
 }
 
+void addToDataset(double **X, int *y, int index, int emotion, double* pixels, string usage){
+    X[index][0] = 1;
+    y[index] = emotion;
+
+    for (int i = 1; i < NUM_FEATURES; i++){
+        X[index][i] = pixels[i-1]; // pixels between 0 and 1
+    }
+}
+
 void initWeights(double *weights){
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
-    uniform_real_distribution<> distribution(0.0, 1.0); // min = 0, max = 1
+    uniform_real_distribution<> distribution(0.0, 0.2); // min = 0, max = 1
 
     for(int i = 0; i < NUM_FEATURES; i++){
         weights[i] = distribution(generator);
@@ -54,25 +63,25 @@ double sigmoid(double z){
 }
 
 double hipothesys(double *weights, double *observation){ //observation == xi
-    double sumOfWeightedFeatures = 0, weight, feature;
+    double z = 0;
 
     for (int i = 0; i < NUM_FEATURES; i++){
-        weight = weights[i];
-        feature = observation[i];
-
-        sumOfWeightedFeatures += (weight * feature);
+        z += (weights[i] * observation[i]);
     }
 
-    return sigmoid(sumOfWeightedFeatures);
+    return sigmoid(z);
 }
 
-void addToDataset(double **X, int *y, int index, int emotion, double* pixels, string usage){
-    X[index][0] = 1;
-    y[index] = emotion;
+double cost_function(double **X_train, int *y_train, double *weights){
+    double cost = 0;
+    double h_xi;
 
-    for (int i = 1; i < NUM_FEATURES; i++){
-        X[index][i] = pixels[i-1]; // pixels between 0 and 1
+    for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
+        h_xi = hipothesys(weights, X_train[i]);
+        cost += ((-y_train[i]*log(h_xi)) - ((1-y_train[i])*log(1-h_xi)));
     }
+
+    return (-1/NUM_TRAIN_OBSERVATIONS) * cost;
 }
 
 double gradient(double **X_train, int *y_train, double *weights, int j){
@@ -85,37 +94,19 @@ double gradient(double **X_train, int *y_train, double *weights, int j){
         h_xi = hipothesys(weights, xi);
         sum += (h_xi - y_train[i])*xi[j];
     }
-    return (-1/NUM_TRAIN_OBSERVATIONS) * sum;
+    return (LEARNING_RATE/NUM_TRAIN_OBSERVATIONS) * sum;
 }
 
 void updateWeights(double **X_train, int *y_train, double *weights, double *newWeights){
     
-    for(int i = 0; i < NUM_FEATURES; i++){
-	    newWeights[i] = weights[i] - (LEARNING_RATE * gradient(X_train, y_train, weights, i));
+    for(int j = 0; j < NUM_FEATURES; j++){
+	    newWeights[j] = weights[j] - gradient(X_train, y_train, weights, j);
     }
 
-    for(int i = 0; i < NUM_FEATURES; i++){
-        weights[i] = newWeights[i];
+    for(int j = 0; j < NUM_FEATURES; j++){
+        weights[j] = newWeights[j];
     }
 }
-
-double cost_function(double **X_train, int *y_train, double *weights){
-    double cost = 0;
-    double h_xi;
-
-    for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-        h_xi = hipothesys(weights, X_train[i]);
-        if(y_train[i] == 1){
-            cost +=  y_train[i] * log(h_xi);
-        }else{
-            cost +=  (1-y_train[i]) * log(1-h_xi);
-        }
-        //cost += ((-y_train[i]*log(h_xi)) - ((1-y_train[i])*log(1-h_xi)));
-    }
-
-    return (-1/NUM_TRAIN_OBSERVATIONS) * cost;
-}
-
 
 int main(){
     double **X_train, **X_test, *weights, *newWeights;
@@ -166,15 +157,17 @@ int main(){
     while(epoch < NUM_EPOCHS){
         double predictions[NUM_TEST_OBSERVATIONS], pred;
         int correct = 0;
+        int h;
         for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
-            pred = round(hipothesys(weights, X_test[i]));
+            h = hipothesys(weights, X_test[i]);
+            pred = round(h);
             predictions[i] = pred;
             if(pred == y_test[i]){
                 correct ++;
             }
         }
 
-        cout<<"correct: "<<correct<<" wrong: "<<NUM_TEST_OBSERVATIONS-correct << " " <<((float)correct/NUM_TEST_OBSERVATIONS)*100<<"%"<<endl;
+        cout<<"correct: "<<correct<<" wrong: "<<NUM_TEST_OBSERVATIONS-correct << " Acurácia: " <<((float)correct/NUM_TEST_OBSERVATIONS)*100<<"%"<<endl;
 
 
 

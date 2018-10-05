@@ -12,7 +12,7 @@ const int NUM_TRAIN_OBSERVATIONS = 3995 + 4097 + 1; //emotion 0 + emotion 2
 const int NUM_TEST_OBSERVATIONS = 958 + 1054 + 1;
 const int NUM_EPOCHS = 100;
 const int COST_THRESHOLD = 0.001;
-const double LEARNING_RATE = 0.1; // TODO: check value
+const double LEARNING_RATE = 0.01; // TODO: check value
 
 double **allocMatrix(int rows, int cols){
     double **matrix = (double **)malloc(rows * sizeof(double *)); 
@@ -108,6 +108,12 @@ void updateWeights(double **X_train, int *y_train, double *weights, double *newW
     }
 }
 
+void saveEpoch(int epoch, ofstream outputFile, double* predictions, int size){
+    double accuracy, precision, recall, f1;
+
+    
+}
+
 int main(){
     double **X_train, **X_test, *weights, *newWeights;
     int *y_train, *y_test;
@@ -122,7 +128,11 @@ int main(){
     newWeights = (double *) malloc (NUM_FEATURES * sizeof(double));
 
     ifstream inputFile;
+    ofstream outputFile;
     inputFile.open("data/images.csv");
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    outputFile.open("results/output" + seed);
+    outputFile << "#epoch accuracy precision recall f1" << endl;
     string line;
     int index_train = 0, index_test = 0;
     double pixels[48*48];
@@ -155,6 +165,29 @@ int main(){
     int epoch = 0;
     
     while(epoch < NUM_EPOCHS){
+        double predictions[NUM_TRAIN_OBSERVATIONS], pred;
+        int correct = 0;
+        int h;
+        for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
+            h = hipothesys(weights, X_train[i]);
+            pred = round(h);
+            predictions[i] = pred;
+            if(pred == y_train[i]){
+                correct ++;
+            }
+        }
+
+        cout<<"Correct: "<<correct<<", Wrong: "<<NUM_TRAIN_OBSERVATIONS-correct << ", Accuracy: " <<((float)correct/NUM_TRAIN_OBSERVATIONS)*100<<"%"<<endl;
+        cout << "Processando época: " << epoch << endl;
+
+        updateWeights(X_train, y_train, weights, newWeights);
+        cost = newCost;
+        newCost = cost_function(X_train, y_train, weights);
+        epoch ++;
+    }
+
+    // tests
+
         double predictions[NUM_TEST_OBSERVATIONS], pred;
         int correct = 0;
         int h;
@@ -167,21 +200,12 @@ int main(){
             }
         }
 
-        cout<<"correct: "<<correct<<" wrong: "<<NUM_TEST_OBSERVATIONS-correct << " Acurácia: " <<((float)correct/NUM_TEST_OBSERVATIONS)*100<<"%"<<endl;
-
-
-
-        cout << "Processando época: " << epoch << ", Custo: " <<cost<< endl;
-        updateWeights(X_train, y_train, weights, newWeights);
-        cost = newCost;
-        newCost = cost_function(X_train, y_train, weights);
-        epoch ++;
-    }
-
-    
+    outputFile.close();
 
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);
     freeMatrix(X_test, NUM_TEST_OBSERVATIONS, NUM_FEATURES);
     free(y_train);
     free(y_test);
+    free(weights);
+    free(newWeights);
 }

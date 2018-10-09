@@ -13,7 +13,7 @@ const int NUM_TRAIN_OBSERVATIONS = 3995 + 4097 + 1; //emotion 0 + emotion 2
 const int NUM_TEST_OBSERVATIONS = 958 + 1054 + 1;
 const int NUM_EPOCHS = 100;
 const int COST_THRESHOLD = 0.001;
-const double LEARNING_RATE = 0.01; // TODO: check value
+const double LEARNING_RATE = 0.0001; // TODO: 
 
 double **allocMatrix(int rows, int cols){
     double **matrix = (double **)malloc(rows * sizeof(double *)); 
@@ -52,7 +52,7 @@ void addToDataset(double **X, double *y, int index, int emotion, double* pixels,
 void initWeights(double *weights){
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
-    uniform_real_distribution<> distribution(0.0001, 0.1); // min = 0, max = 1
+    uniform_real_distribution<> distribution(0.1, 10); // min = 0, max = 1
 
     for(int i = 0; i < NUM_FEATURES; i++){
         weights[i] = distribution(generator);
@@ -63,7 +63,7 @@ double sigmoid(double z){
     return 1.0/(1.0+exp(-z));
 }
 
-double hipothesys(double *weights, double *observation){ //observation == xi
+double hypothesis(double *weights, double *observation){ //observation == xi
     double z = 0;
 
     for (int i = 0; i < NUM_FEATURES; i++){
@@ -78,7 +78,7 @@ double cost_function(double **X_train, double *y_train, double *weights){
     double h_xi;
 
     for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-        h_xi = hipothesys(weights, X_train[i]);
+        h_xi = hypothesis(weights, X_train[i]);
         cost += ((-y_train[i]*log(h_xi)) - ((1-y_train[i])*log(1-h_xi)));
     }
 
@@ -92,10 +92,10 @@ double gradient(double **X_train, double *y_train, double *weights, int j){
     
     for(int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
         xi = X_train[i];
-        h_xi = hipothesys(weights, xi);
+        h_xi = hypothesis(weights, xi);
         sum += (h_xi - y_train[i])*xi[j];
     }
-    return (LEARNING_RATE/NUM_TRAIN_OBSERVATIONS) * sum;
+    return (LEARNING_RATE) * sum;
 }
 
 void updateWeights(double **X_train, double *y_train, double *weights, double *newWeights){
@@ -148,7 +148,7 @@ int main(){
     ofstream outputFile;
     inputFile.open("data/images.csv");
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    outputFile.open("results/output" + seed);
+    outputFile.open("results/output.txt");
     outputFile << "#epoch accuracy precision recall f1 cost" << endl;
     string line;
     
@@ -177,42 +177,35 @@ int main(){
     }
 
     inputFile.close();
-    double cost = INT_MAX;
-    double newCost = cost_function(X_train, y_train, weights);
-    int epoch = 0;
     
+    int epoch = 0;
     while(epoch < NUM_EPOCHS){
         int predictions[NUM_TRAIN_OBSERVATIONS], pred;
         int correct = 0;
-        int h;
 
         for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-            h = hipothesys(weights, X_train[i]);
-            pred = round(h);
+            pred = round(hypothesis(weights, X_train[i]));
             predictions[i] = pred;
             if(pred == y_train[i]){
                 correct ++;
             }
         }
 
-        cout<<"Correct: "<<correct<<", Wrong: "<<NUM_TRAIN_OBSERVATIONS-correct << ", Accuracy: " <<((float)correct/NUM_TRAIN_OBSERVATIONS)*100<<"%, Cost: "<<cost<<endl;
+        double accuracy = ((float)correct/NUM_TRAIN_OBSERVATIONS);
+
+        cout << "Correct: "<<correct<<", Wrong: "<<NUM_TRAIN_OBSERVATIONS-correct << ", Accuracy: " <<accuracy*100<<"%, Cost: "<<1-accuracy<<endl;
         cout << "Processando época: " << epoch << endl;
         
         saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS);
-
         updateWeights(X_train, y_train, weights, newWeights);
-        cost = newCost;
-        newCost = cost_function(X_train, y_train, weights);
         epoch ++;
     }
 
     // Run tests
     int predictions[NUM_TEST_OBSERVATIONS], pred;
     int correct = 0;
-    int h;
     for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
-        h = hipothesys(weights, X_test[i]);
-        pred = round(h);
+        pred = round(hypothesis(weights, X_test[i]));
         predictions[i] = pred;
         if(pred == y_test[i]){
             correct ++;
@@ -223,7 +216,6 @@ int main(){
 
 
     outputFile.close();
-
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);
     freeMatrix(X_test, NUM_TEST_OBSERVATIONS, NUM_FEATURES);
     free(y_train);

@@ -45,7 +45,7 @@ void addToDataset(double **X, double *y, int index, int emotion, double* pixels,
     y[index] = emotion;
 
     for (int i = 1; i < NUM_FEATURES; i++){
-        X[index][i] = pixels[i-1]; // pixels between 0 and 1
+        X[index][i] = pixels[i-1];
     }
 }
 
@@ -73,12 +73,12 @@ double hypothesis(double *weights, double *observation){ //observation == xi
     return sigmoid(z);
 }
 
-double cost_function(double **X_train, double *y_train, double *weights){
+double cost_function(double **X_train, double *y_train, double *predictions){
     double cost = 0;
     double h_xi;
 
     for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-        h_xi = hypothesis(weights, X_train[i]);
+        h_xi = predictions[i];
         double p1 = y_train[i] * log(h_xi);
         double p2 = (1-y_train[i]) * log(1-h_xi);
         cost += (-p1-p2);
@@ -87,42 +87,40 @@ double cost_function(double **X_train, double *y_train, double *weights){
     return  cost/NUM_TRAIN_OBSERVATIONS;
 }
 
-double gradient(double **X_train, double *y_train, double *weights, int j){
+double gradient(double **X_train, double *y_train, double *predictions, int j){
     double h_xi = 0;
     double *xi;
     double sum = 0;
     
     for(int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
         xi = X_train[i];
-        h_xi = hypothesis(weights, xi);
+        h_xi = predictions[i];
         sum += (h_xi - y_train[i])*xi[j];
     }
     return (LEARNING_RATE/NUM_TRAIN_OBSERVATIONS) * sum;
 }
 
-void updateWeights(double **X_train, double *y_train, double *weights, double *newWeights){
+void updateWeights(double **X_train, double *y_train, double *weights, double *predictions){
     
     for(int j = 0; j < NUM_FEATURES; j++){
-	    newWeights[j] = weights[j] - gradient(X_train, y_train, weights, j);
-    }
-
-    //Atualizando pesos
-    //weights = newWeights;
-    for(int j = 0; j < NUM_FEATURES; j++){
-       weights[j] = newWeights[j];
+	    weights[j] -= gradient(X_train, y_train, predictions, j);
     }
 }
 
-void saveEpoch(int epoch, ofstream &outputFile, int *predictions, double *y, int size, double cost, long time){
+void saveEpoch(int epoch, ofstream &outputFile, double *predictions, double *y, int size, double cost, long time){
     double accuracy, precision, recall, f1;
     double tp = 0, tn = 0, fp = 0, fn = 0;
-    
+    int pred, real;
+
     for(int i = 0; i < size; i++){
-        if(predictions[i] == 0 && round(y[i]) == 0)
+        pred = round(predictions[i]);
+        real= round(y[i]);
+
+        if(pred == 0 && real == 0)
                 tn++;
-        else if(predictions[i] == 0 && round(y[i]) == 1)
+        else if(pred == 0 && real == 1)
                 fn++;
-        else if(predictions[i] == 1 && round(y[i]) == 0)
+        else if(pred == 1 && real == 0)
                 fp++;
         else
                 tp++;
@@ -179,11 +177,11 @@ int main(int argc, char** argv){
     while(getline(inputFile, line)){
         int lastPixelIndex = line.find(",", 2);
         int emotion = line[0] - '0';
-        string pixels_str = line.substr(2, line.find(",", 2)-2);
-        string usage = line.substr(lastPixelIndex+1);
-        parsePixels(pixels_str, pixels);
-
+        
         if(emotion == 0 || emotion == 2){
+                string pixels_str = line.substr(2, line.find(",", 2)-2);
+                string usage = line.substr(lastPixelIndex+1);
+                parsePixels(pixels_str, pixels);
                 emotion = round(emotion / 2);
             if(usage.compare("Training") != 0 && index_test < NUM_TEST_OBSERVATIONS){
                 addToDataset(X_test, y_test, index_test, emotion, pixels, usage);
@@ -199,37 +197,29 @@ int main(int argc, char** argv){
     
     int epoch = 1;
     while(epoch <= NUM_EPOCHS){
-        //cout << "Processando época: " << epoch << endl;
-        auto start = std::chrono::system_clock::now();
-
-        updateWeights(X_train, y_train, weights, newWeights);
-
-        int predictions[NUM_TRAIN_OBSERVATIONS], pred;
-        //int correct = 0;
+        double predictions[NUM_TRAIN_OBSERVATIONS], pred;
+        auto start = chrono::system_clock::now();
 
         for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-            pred = round(hypothesis(weights, X_train[i]));
+            pred = hypothesis(weights, X_train[i]);
             predictions[i] = pred;
-            /*if(pred == y_train[i]){
-                correct ++;
-            }*/
         }
+
+        updateWeights(X_train, y_train, weights, predictions);
+
         auto end = chrono::system_clock::now();
         long elapsed = chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        double cost = cost_function(X_train, y_train, weights);
-
-        //double accuracy = ((float)correct/NUM_TRAIN_OBSERVATIONS);
-        //cout << "Correct: "<<correct<<", Wrong: "<<NUM_TRAIN_OBSERVATIONS-correct << ", Accuracy: " <<accuracy*100<<"%, Cost: "<<cost<<endl;
+        double cost = cost_function(X_train, y_train, predictions);
         
         saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost, elapsed);
         epoch ++;
     }
 
     // Run tests
-    int predictions[NUM_TEST_OBSERVATIONS], pred;
+    double predictions[NUM_TEST_OBSERVATIONS], pred;
     int correct = 0;
     for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
-        pred = round(hypothesis(weights, X_test[i]));
+        pred = hypothesis(weights, X_test[i]);
         predictions[i] = pred;
         if(pred == y_test[i]){
             correct ++;

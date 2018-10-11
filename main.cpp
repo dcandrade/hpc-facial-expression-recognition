@@ -14,6 +14,7 @@ int NUM_TEST_OBSERVATIONS = 958 + 1054 + 1;
 int NUM_EPOCHS = 100;
 int COST_THRESHOLD = 0.001;
 float LEARNING_RATE = 0.01;
+string OUTPUT_FILE_PREFIX = "results/";
 
 float **allocMatrix(int rows, int cols){
     float **matrix = (float **)malloc(rows * sizeof(float *)); 
@@ -124,14 +125,16 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
 }
 
 void parse_args(int argc, char**argv){
-    if(argc < 4){
+    if(argc < 5){
         return;
     }
 
-    NUM_TRAIN_OBSERVATIONS = atof(argv[0]) + 1;
-    NUM_TEST_OBSERVATIONS = atof(argv[1]) + 1;
-    NUM_EPOCHS = atof(argv[2]);
+    NUM_TRAIN_OBSERVATIONS = atof(argv[1]) + 1;
+    NUM_TEST_OBSERVATIONS = atof(argv[2]) + 1;
+    NUM_EPOCHS = atof(argv[3]);
     LEARNING_RATE = atof(argv[4]);
+    OUTPUT_FILE_PREFIX += argv[5];
+    OUTPUT_FILE_PREFIX += "/";
 }
 
 int main(int argc, char** argv){
@@ -146,16 +149,16 @@ int main(int argc, char** argv){
 
     weights = (float *) malloc (NUM_FEATURES * sizeof(float));
     for(int i = 0; i < NUM_FEATURES; i++){
-        weights[i] = 0;//distribution(generator);
+        weights[i] = 0;
     }
 
     ifstream inputFile;
     ofstream outputFile;
     inputFile.open("data/images.csv");
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    string outputFileName = "results/output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test___"+to_string(seed)+".txt";
+    string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt";
     outputFile.open(outputFileName);
-    outputFile << "epoch,accuraloadscy,precision,recall,f1,cost,time" << endl;
+    outputFile << "epoch,accuracy,precision,recall,f1,cost,time" << endl;
     string line;
     
     int index_train = 0, index_test = 0;

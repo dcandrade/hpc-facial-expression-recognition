@@ -97,7 +97,7 @@ void updateWeights(float **X_train, float *y_train, float *weights, float *predi
     }
 }
 
-void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, int size, float cost, long time){
+void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, int size, float cost){
     float accuracy, precision, recall, f1;
     float tp = 0, tn = 0, fp = 0, fn = 0;
     int pred, real;
@@ -121,7 +121,7 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
     recall = tp/(tp + fn);
     f1 = (2*recall*precision)/(recall + precision);
 
-    outputFile << epoch <<  "," << accuracy <<  "," << precision << "," << recall <<  "," << f1 <<  "," << cost << "," <<time << endl;
+    outputFile << epoch <<  "," << accuracy <<  "," << precision << "," << recall <<  "," << f1 <<  "," << cost << endl;
 }
 
 void parse_args(int argc, char**argv){
@@ -152,13 +152,15 @@ int main(int argc, char** argv){
         weights[i] = 0;
     }
 
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    auto start = chrono::system_clock::now();
+
     ifstream inputFile;
     ofstream outputFile;
     inputFile.open("data/images.csv");
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt";
     outputFile.open(outputFileName);
-    outputFile << "epoch,accuracy,precision,recall,f1,cost,time" << endl;
+    outputFile << "epoch,accuracy,precision,recall,f1,cost" << endl;
     string line;
     
     int index_train = 0, index_test = 0;
@@ -190,7 +192,6 @@ int main(int argc, char** argv){
     int epoch = 1;
     while(epoch <= NUM_EPOCHS){
         float predictions[NUM_TRAIN_OBSERVATIONS], pred;
-        auto start = chrono::system_clock::now();
 
         for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
             pred = hypothesis(weights, X_train[i]);
@@ -198,12 +199,9 @@ int main(int argc, char** argv){
         }
 
         updateWeights(X_train, y_train, weights, predictions);
-
-        auto end = chrono::system_clock::now();
-        long elapsed = chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         float cost = cost_function(X_train, y_train, predictions);
         
-        saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost, elapsed);
+        saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost);
         epoch ++;
     }
 
@@ -218,8 +216,15 @@ int main(int argc, char** argv){
         }
     }
 
-    saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1, -1);
+    saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1);
 
+    auto end = chrono::system_clock::now();
+    long elapsed = chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    
+    ofstream timeFile;
+    timeFile.open(OUTPUT_FILE_PREFIX+"time.txt", ios_base::app); // append to the end of the file
+    timeFile << elapsed <<endl;
+    timeFile.close();
 
     outputFile.close();
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);

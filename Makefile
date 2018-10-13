@@ -1,10 +1,9 @@
 all: compile run
-
 compile:
 	g++ -O3 main.cpp -o main.out
 
 run:
-	./main.out
+	./main.out 8092 2012 100 0.01 epoch-scalability/100
 
 debug:
 	g++ -g main.cpp -o main.out
@@ -16,7 +15,7 @@ clean:
 	rm perf.*
 
 profile: compile
-	perf record -e cycles,instructions,cache-references,branches,branch-misses,cache-misses,bus-cycles,L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,dTLB-loads,dTLB-load-misses -d ./main.out
+	perf record -g -e cycles,branches,branch-misses,cache-misses,bus-cycles,L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,dTLB-loads,dTLB-load-misses -d ./main.out 8092 2012 100 0.01 epoch-scalability/100
 
 setup-experiments:
 	mkdir results/
@@ -43,3 +42,6 @@ scalability-size-experiments:
 	done;
 	
 experiments: compile scalability-epoch-experiments scalability-size-experiments
+
+documentation:
+	doxygen Doxyfile

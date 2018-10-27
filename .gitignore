@@ -1,5 +1,8 @@
 # Dataset
 */data/*
+.vscode/
+.ipynb_checkpoints/
+
 # Prerequisites
 *.d
 

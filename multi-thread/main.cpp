@@ -1,9 +1,9 @@
 /**
  * @file main.cpp
  * @author Daniel Andrade e Gabriel Gomes
- * @brief Reconhecedor de Expressões Faciais através de Regressão Logística
+ * @brief Reconhecedor de Expressões Faciais através de Regressão Logística - Versão OpenMP
  * @version 1.0
- * @date 2018-10-12
+ * @date 2018-10-28
  * 
  * @copyright Copyright (c) 2018
  * 
@@ -206,6 +206,7 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
  * @param argv Vetor contendo o valor dos argumentos
  */
 void parse_args(int argc, char**argv){
+
     if(argc < 6){
         cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA MAX_THREADS" << endl;
         exit(EXIT_FAILURE);
@@ -217,12 +218,11 @@ void parse_args(int argc, char**argv){
     LEARNING_RATE = atof(argv[4]);
     OUTPUT_FILE_PREFIX += argv[5];
     OUTPUT_FILE_PREFIX += "/";
-    MAX_THREADS += atof(argv[6]);
+    MAX_THREADS = atof(argv[6]);
 
     if(MAX_THREADS < 0 || MAX_THREADS > omp_get_max_threads()){
         cout << "Quantidade de threads inválida" << endl;
         exit(EXIT_FAILURE);
-
     }
 
     omp_set_num_threads(MAX_THREADS);

@@ -16,6 +16,8 @@
 #include <sstream> 
 #include <math.h> 
 #include <time.h>
+#include <omp.h>
+
 
 using namespace std;
 
@@ -23,6 +25,7 @@ int NUM_FEATURES = 128 * 128 + 1; /// Quantidade de pixels + bias
 int NUM_TRAIN_OBSERVATIONS = 15640; /// Quantidade de observações de treino
 int NUM_TEST_OBSERVATIONS = 3730; /// Quantidade de observações de teste
 int NUM_EPOCHS = 100; /// Quantidade de épocas
+int MAX_THREADS = -1;
 float LEARNING_RATE = 0.01;	 /// Taxa de Apredizado
 string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
 
@@ -203,8 +206,8 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
  * @param argv Vetor contendo o valor dos argumentos
  */
 void parse_args(int argc, char**argv){
-    if(argc < 5){
-        cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA"<<endl;
+    if(argc < 6){
+        cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA MAX_THREADS" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -214,6 +217,15 @@ void parse_args(int argc, char**argv){
     LEARNING_RATE = atof(argv[4]);
     OUTPUT_FILE_PREFIX += argv[5];
     OUTPUT_FILE_PREFIX += "/";
+    MAX_THREADS += atof(argv[6]);
+
+    if(MAX_THREADS < 0 || MAX_THREADS > omp_get_max_threads()){
+        cout << "Quantidade de threads inválida" << endl;
+        exit(EXIT_FAILURE);
+
+    }
+
+    omp_set_num_threads(MAX_THREADS);
 }
 
 int main(int argc, char** argv){

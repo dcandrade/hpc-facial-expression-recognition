@@ -199,14 +199,14 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
  * @param argc Quantidade de argumentos
  * @param argv Vetor contendo o valor dos argumentos
  */
-void parse_args(int argc, char**argv){
+void parse_args(int argc, char **argv){
     if(argc < 5){
         cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA"<<endl;
         exit(EXIT_FAILURE);
     }
 
-    NUM_TRAIN_OBSERVATIONS = atof(argv[1]) + 1;
-    NUM_TEST_OBSERVATIONS = atof(argv[2]) + 1;
+    NUM_TRAIN_OBSERVATIONS = atof(argv[1]);
+    NUM_TEST_OBSERVATIONS = atof(argv[2]);
     NUM_EPOCHS = atof(argv[3]);
     LEARNING_RATE = atof(argv[4]);
     OUTPUT_FILE_PREFIX += argv[5];

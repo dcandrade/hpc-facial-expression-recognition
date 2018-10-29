@@ -19,7 +19,7 @@ profile: compile
 
 setup-experiments:
 	mkdir results/
-	mkdir results/epoch-scalability results/size-scalability
+	mkdir results/epoch-scalability results/size-scalability results/thread-scalability
 	cd results/epoch-scalability &&	mkdir 800 400 200 100 50 && cd ../..
 	cd results/size-scalability && mkdir 15640 7820 3910 1955 977 && cd ../..
 	cd results/thread-scalability && mkdir 1 2 3 4 && cd ../..

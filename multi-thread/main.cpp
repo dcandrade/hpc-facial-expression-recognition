@@ -245,9 +245,6 @@ int main(int argc, char** argv){
         weights[i] = 0;
     }
 
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    auto start = chrono::system_clock::now(); // Início da contagem do tempo de cômputo
-
     ofstream outputFile;
     string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
     outputFile.open(outputFileName);
@@ -302,6 +299,9 @@ int main(int argc, char** argv){
     trainFile.close();
     testFile.close();
 
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    auto start = chrono::system_clock::now(); // Início da contagem do tempo de cômputo
+    
     // Execução das épocas de treinamento
     int epoch = 1;
     float predictions[NUM_TRAIN_OBSERVATIONS], cost;

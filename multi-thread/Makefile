@@ -16,6 +16,7 @@ clean:
 
 profile: 
 	g++  -g -pg -fopenmp -O3 -o main.out main.cpp
+	./main.out
 	gprof main.out > profile.txt
 
 setup-experiments:

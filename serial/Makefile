@@ -15,8 +15,9 @@ clean:
 	rm perf.*
 
 profile: 
-	g++ -pg -O3 main.cpp -o main.out
-	
+	g++  -g -pg -O3 -o main.out main.cpp
+	./main.out
+	gprof main.out > profile.txt
 
 setup-experiments:
 	mkdir results/

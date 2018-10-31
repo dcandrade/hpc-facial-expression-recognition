@@ -3,7 +3,7 @@ compile:
 	g++ -fopenmp -O3 main.cpp -o main.out
 
 run:
-	./main.out 15640 3730 200 0.001 epoch-scalability/200 4
+	./main.out 15640 3730 500 0.001 epoch-scalability/500 4
 
 debug:
 	g++ -g main.cpp -o main.out
@@ -14,39 +14,38 @@ clean:
 	rm -rf results
 	rm perf.*
 
-profile: compile
-	perf record -e cycles,branches,branch-misses,cache-misses,bus-cycles,L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,dTLB-loads,dTLB-load-misses -d ./main.out 15640 3730 200 0.001 epoch-scalability/200 4
+profile: 
+	g++  -g -pg -fopenmp -O3 -o main.out main.cpp
+	gprof main.out > profile.txt
 
 setup-experiments:
 	mkdir results/
-	mkdir results/epoch-scalability results/size-scalability results/thread-scalability
-	cd results/epoch-scalability &&	mkdir 800 400 200 100 50 && cd ../..
+	mkdir results/epoch-scalability results/size-scalability
+	cd results/epoch-scalability &&	mkdir 1000 500 250 125 && cd ../..
 	cd results/size-scalability && mkdir 15640 11730 5865 && cd ../..
-	cd results/thread-scalability && mkdir 1 2 3 4 && cd ../..
-
 
 scalability-epoch-experiments:
 	for i in {1..5}; do \
-		./main.out 15640 3730 25 0.001 epoch-scalability/800 4; \
-		./main.out 15640 3730 400 0.001 epoch-scalability/400 4; \
-		./main.out 15640 3730 200 0.001 epoch-scalability/200 4; \
-		./main.out 15640 3730 100 0.001 epoch-scalability/100 4; \
-		./main.out 15640 3730 50 0.001 epoch-scalability/50 4; \
+		./main.out 15640 3730 1000 0.001 epoch-scalability/1000 4; \
+		./main.out 15640 3730 500 0.001 epoch-scalability/500 4; \
+		./main.out 15640 3730 250 0.001 epoch-scalability/250 4; \
+		./main.out 15640 3730 125 0.001 epoch-scalability/125 4; \
+		#./main.out 15640 3730 50 0.001 epoch-scalability/50 4; \
 	done;
 
 scalability-size-experiments:
 	for i in {1..5}; do \
-		./main.out 15640 3730 200 0.001 size-scalability/15640 4; \ #100%
-		./main.out 11730 3730 200 0.001 size-scalability/11730 4; \ # 75%
-		./main.out 5865 3730 200 0.001 size-scalability/5865 4; \ #50%
+		./main.out 15640 3730 500 0.001 size-scalability/15640 4; \ #100%
+		./main.out 11730 3730 500 0.001 size-scalability/11730 4; \ # 75%
+		./main.out 5865 3730 500 0.001 size-scalability/5865 4; \ #50%
 	done;
 	
 scalability-thread-experiments:
 	for i in {1..5}; do \
-		./main.out 15640 3730 200 0.001 thread-scalability/1 1; \
-		./main.out 7820 3730 200 0.001 thread-scalability/2 2; \
-		./main.out 3910 3730 200 0.001 thread-scalability/3 3; \
-		./main.out 1955 3730 200 0.001 thread-scalability/4 4; \
+		./main.out 15640 3730 500 0.001 thread-scalability/1 1; \
+		./main.out 7820 3730 500 0.001 thread-scalability/2 2; \
+		./main.out 3910 3730 500 0.001 thread-scalability/3 3; \
+		./main.out 1955 3730 500 0.001 thread-scalability/4 4; \
 	done;
 
 experiments: compile scalability-epoch-experiments scalability-size-experiments scalability-thread-experiments

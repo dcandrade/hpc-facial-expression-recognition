@@ -24,8 +24,8 @@ using namespace std;
 int NUM_FEATURES = 128 * 128 + 1; /// Quantidade de pixels + bias
 int NUM_TRAIN_OBSERVATIONS = 15640; /// Quantidade de observações de treino
 int NUM_TEST_OBSERVATIONS = 3730; /// Quantidade de observações de teste
-int NUM_EPOCHS = 100; /// Quantidade de épocas
-int MAX_THREADS = -1;
+int NUM_EPOCHS = 500; /// Quantidade de épocas
+int MAX_THREADS = 4;
 float LEARNING_RATE = 0.01;	 /// Taxa de Apredizado
 string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
 
@@ -209,7 +209,8 @@ void parse_args(int argc, char **argv){
 
     if(argc < 6){
         cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA MAX_THREADS" << endl;
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return;
     }
 
     NUM_TRAIN_OBSERVATIONS = atof(argv[1]);

@@ -26,6 +26,7 @@ int NUM_TRAIN_OBSERVATIONS = 15640; /// Quantidade de observações de treino
 int NUM_TEST_OBSERVATIONS = 3730; /// Quantidade de observações de teste
 int NUM_EPOCHS = 500; /// Quantidade de épocas
 int MAX_THREADS = 4;
+int NUM_ITERATIONS = 5;
 float LEARNING_RATE = 0.01;	 /// Taxa de Apredizado
 string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
 
@@ -244,12 +245,6 @@ int main(int argc, char** argv){
     for(int i = 0; i < NUM_FEATURES; i++){									//iniciando com zero o vetor contendo os coeficientes de regressão
         weights[i] = 0;
     }
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    
-    ofstream outputFile;
-    string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
-    outputFile.open(outputFileName);
-    outputFile << "epoch,accuracy,precision,recall,f1,cost" << endl; // Escreve o cabeçalho dos dados no arquivo de saída
 
     ifstream trainFile, testFile;
     trainFile.open("../data/train.csv");
@@ -299,46 +294,56 @@ int main(int argc, char** argv){
 
     trainFile.close();
     testFile.close();
-
     
-    auto start = chrono::system_clock::now(); // Início da contagem do tempo de cômputo
-    
-    // Execução das épocas de treinamento
-    int epoch = 1;
-    float predictions[NUM_TRAIN_OBSERVATIONS], cost;
-    while(epoch <= NUM_EPOCHS){
+   	
+   for(int iteration = 0; iteration < NUM_ITERATIONS; i++){
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        ofstream outputFile;
+        string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
+        outputFile.open(outputFileName);
+        outputFile << "epoch,accuracy,precision,recall,f1,cost" << endl; // Escreve o cabeçalho dos dados no arquivo de saída
 
-        #pragma omp parallel for
-        for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-            predictions[i] = hypothesis(weights, X_train[i]);
+        
+        auto start = chrono::system_clock::now(); // Início da contagem do tempo de cômputo
+        
+        // Execução das épocas de treinamento
+        int epoch = 1;
+        float predictions[NUM_TRAIN_OBSERVATIONS], cost;
+        while(epoch <= NUM_EPOCHS){
+
+            #pragma omp parallel for
+            for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
+                predictions[i] = hypothesis(weights, X_train[i]);
+            }
+
+            updateWeights(X_train, y_train, weights, predictions); 
+            cost = cost_function(X_train, y_train, predictions); 
+            
+            saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost);
+            epoch ++;
         }
 
-        updateWeights(X_train, y_train, weights, predictions); 
-        cost = cost_function(X_train, y_train, predictions); 
+        // Cálculo das predicçoes do conjunto de teste pois o treinamento já foi finalizado.  
+        #pragma omp parallel for  
+        for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
+            predictions[i] = hypothesis(weights, X_test[i]);;
+        }
+
+        saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1); // Salva as estatísticas de teste no arquivo de saída
+
+        auto end = chrono::system_clock::now(); // Fim da contagem do tempo de cômputo
+        long elapsed = chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         
-        saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost);
-        epoch ++;
-    }
+        // Escrita do tempo de cômputo no arquivo de saída
+        ofstream timeFile;
+        timeFile.open(OUTPUT_FILE_PREFIX+"time.txt", ios_base::app); // Concatena o tempo medido no final do arquivo
+        timeFile << elapsed <<endl;
+        timeFile.close();
 
-    // Cálculo das predicçoes do conjunto de teste pois o treinamento já foi finalizado.  
-    #pragma omp parallel for  
-    for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
-        predictions[i] = hypothesis(weights, X_test[i]);;
-    }
-
-    saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1); // Salva as estatísticas de teste no arquivo de saída
-
-    auto end = chrono::system_clock::now(); // Fim da contagem do tempo de cômputo
-    long elapsed = chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    
-    // Escrita do tempo de cômputo no arquivo de saída
-    ofstream timeFile;
-    timeFile.open(OUTPUT_FILE_PREFIX+"time.txt", ios_base::app); // Concatena o tempo medido no final do arquivo
-    timeFile << elapsed <<endl;
-    timeFile.close();
-
-    // Fecha os arquivos e libera as estruturas dinamicamente alocadas
-    outputFile.close();
+        // Fecha os arquivos e libera as estruturas dinamicamente alocadas
+        outputFile.close();
+   }	
+   	
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS);
     freeMatrix(X_test, NUM_TEST_OBSERVATIONS);
     free(y_train);

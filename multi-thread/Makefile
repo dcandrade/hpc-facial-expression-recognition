@@ -36,9 +36,9 @@ scalability-epoch-experiments:
 
 scalability-size-experiments:
 	for i in {1..5}; do \
-		./main.out 15640 3730 500 0.001 size-scalability/15640 4; \ #100%
-		./main.out 11730 3730 500 0.001 size-scalability/11730 4; \ # 75%
-		./main.out 5865 3730 500 0.001 size-scalability/5865 4; \ #50%
+		./main.out 15640 3730 500 0.001 epoch-scalability/15640 4; \
+		./main.out 11730 3730 500 0.001 epoch-scalability/11730 4; \
+		./main.out 7280 3730 500 0.001 epoch-scalability/5865 4; \
 	done;
 	
 scalability-thread-experiments:

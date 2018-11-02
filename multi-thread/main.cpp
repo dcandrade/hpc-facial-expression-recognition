@@ -27,7 +27,7 @@ int NUM_TEST_OBSERVATIONS = 3730; /// Quantidade de observações de teste
 int NUM_EPOCHS = 500; /// Quantidade de épocas
 int MAX_THREADS = 4;
 int NUM_ITERATIONS = 5;
-float LEARNING_RATE = 0.01;	 /// Taxa de Apredizado
+float LEARNING_RATE = 0.001;	 /// Taxa de Apredizado
 string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
 
 /**
@@ -296,7 +296,7 @@ int main(int argc, char** argv){
     testFile.close();
     
    	
-   for(int iteration = 0; iteration < NUM_ITERATIONS; i++){
+   for(int iteration = 0; iteration < NUM_ITERATIONS; iteration++){
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         ofstream outputFile;
         string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino

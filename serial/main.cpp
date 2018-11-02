@@ -24,7 +24,7 @@ int NUM_TRAIN_OBSERVATIONS = 15640; /// Quantidade de observações de treino
 int NUM_TEST_OBSERVATIONS = 3730; /// Quantidade de observações de teste
 int NUM_EPOCHS = 100; /// Quantidade de épocas
 int NUM_ITERATIONS = 5;
-float LEARNING_RATE = 0.01;	 /// Taxa de Apredizado
+float LEARNING_RATE = 0.001;	 /// Taxa de Apredizado
 string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
 
 /**

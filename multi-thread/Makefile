@@ -27,26 +27,21 @@ setup-experiments:
 	cd results/thread-scalability && mkdir 1 2 3 4 && cd ../..
 	
 scalability-epoch-experiments:
-	for i in {1..5}; do \
-		./main.out 15640 3730 1000 0.001 epoch-scalability/1000 4; \
-		./main.out 15640 3730 500 0.001 epoch-scalability/500 4; \
-		./main.out 15640 3730 250 0.001 epoch-scalability/250 4; \
-	done;
-
+	./main.out 15640 3730 1000 0.001 epoch-scalability/1000 4; \
+	./main.out 15640 3730 500 0.001 epoch-scalability/500 4; \
+	./main.out 15640 3730 250 0.001 epoch-scalability/250 4; \
+	
 scalability-size-experiments:
-	for i in {1..5}; do \
-		./main.out 15640 3730 500 0.001 size-scalability/15640 4; \
-		./main.out 11730 3730 500 0.001 size-scalability/11730 4; \
-		./main.out 7280 3730 500 0.001 size-scalability/5865 4; \
-	done;
+	./main.out 15640 3730 500 0.001 size-scalability/15640 4; \
+	./main.out 11730 3730 500 0.001 size-scalability/11730 4; \
+	./main.out 7280 3730 500 0.001 size-scalability/5865 4; \
+
 	
 scalability-thread-experiments:
-	for i in {1..5}; do \
-		./main.out 15640 3730 500 0.001 thread-scalability/1 1; \
-		./main.out 15640 3730 500 0.001 thread-scalability/2 2; \
-		./main.out 15640 3730 500 0.001 thread-scalability/3 3; \
-		./main.out 15640 3730 500 0.001 thread-scalability/4 4; \
-	done;
+	./main.out 15640 3730 500 0.001 thread-scalability/1 1; \
+	./main.out 15640 3730 500 0.001 thread-scalability/2 2; \
+	./main.out 15640 3730 500 0.001 thread-scalability/3 3; \
+	./main.out 15640 3730 500 0.001 thread-scalability/4 4; \
 
 experiments: compile scalability-size-experiments scalability-thread-experiments
 

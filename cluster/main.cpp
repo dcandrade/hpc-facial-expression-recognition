@@ -243,8 +243,29 @@ void parse_args(int argc, char **argv){
 int main(int argc, char** argv){
     parse_args(argc, argv);
 
+    int rank, num_procs;
+    
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&num_procs);
+
+    int train_proc_size = NUM_TRAIN_OBSERVATIONS / num_procs;
+    int train_last_proc_size = train_proc_size + (NUM_TRAIN_OBSERVATIONS % num_procs)*NUM_TRAIN_OBSERVATIONS;
+
+     int test_proc_size = NUM_TEST_OBSERVATIONS / num_procs;
+    int test_last_proc_size = test_proc_size + (NUM_TEST_OBSERVATIONS % num_procs)*NUM_TRAIN_OBSERVATIONS;
+
     float **X_train, **X_test, *weights, *newWeights;						//definindo matrizes
     float *y_train, *y_test;												//definindo matrizes
+    
+    if(rank == num_procs - 1){
+       NUM_TRAIN_OBSERVATIONS =  train_last_proc_size;
+       NUM_TEST_OBSERVATIONS = test_last_proc_size;
+    }else{
+        NUM_TRAIN_OBSERVATIONS =  train_proc_size;
+        NUM_TEST_OBSERVATIONS = test_proc_size;
+    }
+
     X_train = allocMatrix(NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);			//alocando espaço 
     X_test = allocMatrix(NUM_TEST_OBSERVATIONS, NUM_FEATURES);				//alocando espaço 
     y_train = (float *)malloc(NUM_TRAIN_OBSERVATIONS * sizeof(float));		//alocando espaço 
@@ -272,8 +293,10 @@ int main(int argc, char** argv){
     string line;
     int index = 0, sex, pixelsIndex;
     float pixels[NUM_FEATURES - 1];
+    int workload = NUM_FEATURES/rank;
 	//cout << "carregando treino" << endl;
-    while(getline(trainFile, line)){    // Leitura do arquivo de entrada (treino)
+    for(int i = rank*workload; i<rank*workload+NUM_TRAIN_OBSERVATIONS; i++){
+        getline(trainFile, line);
         sex = line[0] - '0';
         pixelsIndex = line.find(",");
         string pixels_str = line.substr(pixelsIndex+1);
@@ -284,9 +307,11 @@ int main(int argc, char** argv){
             index ++;
         }
     }
+
     //cout << "carregando teste" << endl;
     index = 0;
-    while(getline(testFile, line)){    // Leitura do arquivo de entrada (teste)
+    for(int i = rank*workload; i<rank*workload+NUM_TRAIN_OBSERVATIONS; i++){
+        getline(testFile, line);
         sex = line[0] - '0';
         
         pixelsIndex = line.find(",");
@@ -304,12 +329,6 @@ int main(int argc, char** argv){
     float predictions[NUM_TRAIN_OBSERVATIONS], cost;
 
    for(int iteration = 0; iteration < NUM_ITERATIONS; iteration++){
-        int rank, num_procs;
-
-        MPI_Init(&argc,&argv);
-        MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-        MPI_Comm_size(MPI_COMM_WORLD,&num_procs);
-
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         ofstream outputFile;
         string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
@@ -327,8 +346,8 @@ int main(int argc, char** argv){
                 predictions[i] = hypothesis(weights, X_train[i], rank, num_procs);
             }
 
-            updateWeights(X_train, y_train, weights, predictions); 
-            cost = cost_function(X_train, y_train, predictions); 
+            updateWeights(X_train, y_train, weights, predictions, rank, num_procs); 
+            cost = cost_function(X_train, y_train, predictions, rank, num_procs); 
             
             saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost);
             epoch ++;

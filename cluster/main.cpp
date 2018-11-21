@@ -108,40 +108,63 @@ float sigmoid(float z){
  * @param observation Observação para qual o ŷ será calculado
  * @return float ŷ  
  */
-float hypothesis(float *weights, float *observation){ //observation == xi
+float hypothesis(float *weights, float *observation, int rank, int num_procs){ //observation == xi
     float z = 0;
+    int workload = NUM_FEATURES/num_procs;
+    int rank_workload = workload * rank;
 
-    for (int i = 0; i < NUM_FEATURES; i++){
-        z += (weights[i] * observation[i]);								/// Este produto representa a hipótese
+    //#pragma omp parallel for reduction(+:z)
+    for (int i = rank_workload; i < rank_workload+workload; i++){
+        z += (weights[i] * observation[i]);		
     }
 
-    return sigmoid(z);													///A hipótese é passada para função sigmóide antes de retornar, obtendo ŷ
+    float global_z = 0;
+
+    MPI_Allreduce(&z, &global_z, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+
+    return sigmoid(global_z);													
 }
+
 //Método usado para calcular a função de custo.
-float cost_function(float **X_train, float *y_train, float *predictions){
+float cost_function(float **X_train, float *y_train, float *predictions, int rank, int num_procs){
     float cost = 0;
     float h_xi;
 
-    for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
+    int workload = NUM_TRAIN_OBSERVATIONS/num_procs;
+    int rank_workload = workload * rank;
+
+    for (int i = rank_workload; i < rank_workload+workload; i++){
         h_xi = predictions[i];
-        float p1 = y_train[i] * log(h_xi);								///primeira parte da função de custo
-        float p2 = (1-y_train[i]) * log(1-h_xi);						///segunda parte da função de custo
-        cost += (-p1-p2);												///função de custo dada pelo somatório do inverso das duas partes
+        float p1 = y_train[i] * log(h_xi);								
+        float p2 = (1-y_train[i]) * log(1-h_xi);						
+        cost += (-p1-p2);											
     }
+
+    float global_cost = 0;
+    MPI_Allreduce(&cost, &global_cost, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
 
     return  cost/NUM_TRAIN_OBSERVATIONS;
 }
 //Método para calcular o gradiente. É passado como parâmetro todas as observações, as respostas e as predições.
-float gradient(float **X_train, float *y_train, float *predictions, int j){
+float gradient(float **X_train, float *y_train, float *predictions, int j, int rank, int num_procs){
+
     float h_xi = 0;
     float *xi;
     float sum = 0;
+
+     int workload = NUM_TRAIN_OBSERVATIONS/num_procs;
+    int rank_workload = workload * rank;
+
     
-    for(int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-        xi = X_train[i];										///pega uma das observações
-        h_xi = predictions[i];									///pega uma das predições (resposta prevista)
-        sum += (h_xi - y_train[i])*xi[j];						///faz o somatório da diferença do vetor de resposta prevista pelo vetor de resposta multiplicado pelo vetor contendo os valores de observação
+    for(int i = rank_workload; i < rank_workload+workload; i++){
+        xi = X_train[i];										
+        h_xi = predictions[i];									
+        sum += (h_xi - y_train[i])*xi[j];						
     }
+
+    float global_sum = 0;
+    MPI_Allreduce(&sum, &global_sum, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+
     return (LEARNING_RATE/NUM_TRAIN_OBSERVATIONS) * sum;
 }
 
@@ -153,9 +176,10 @@ float gradient(float **X_train, float *y_train, float *predictions, int j){
  * @param weights Pesos atuais
  * @param predictions Predicões de cada item de X_train utilizando os coeficientes mais recentes
  */
-void updateWeights(float **X_train, float *y_train, float *weights, float *predictions){    
+void updateWeights(float **X_train, float *y_train, float *weights, float *predictions, int rank, int num_procs){ 
+
     for(int j = 0; j < NUM_FEATURES; j++){
-	    weights[j] -= gradient(X_train, y_train, predictions, j);
+	    weights[j] -= gradient(X_train, y_train, predictions, j, rank, num_procs);
     }
 }
 
@@ -170,12 +194,11 @@ void updateWeights(float **X_train, float *y_train, float *weights, float *predi
  * @param cost Custo do do erro da época atual
  */
 void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, int size, float cost){
-    //cout << "done epoch #" <<epoch<<endl;
     float accuracy, precision, recall, f1;
     float tp = 0, tn = 0, fp = 0, fn = 0;
     int pred, real;
 
-    for(int i = 0; i < size; i++){										///calculando dados para matriz de confusão a partir do valor real e do valor predito
+    for(int i = 0; i < size; i++){
         pred = round(predictions[i]);
         real= round(y[i]);
 
@@ -281,7 +304,12 @@ int main(int argc, char** argv){
     float predictions[NUM_TRAIN_OBSERVATIONS], cost;
 
    for(int iteration = 0; iteration < NUM_ITERATIONS; iteration++){
-       //cout << endl << "ITERATION "<< iteration << endl;
+        int rank, num_procs;
+
+        MPI_Init(&argc,&argv);
+        MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+        MPI_Comm_size(MPI_COMM_WORLD,&num_procs);
+
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         ofstream outputFile;
         string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
@@ -296,7 +324,7 @@ int main(int argc, char** argv){
       
         while(epoch <= NUM_EPOCHS){
             for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-                predictions[i] = hypothesis(weights, X_train[i]);
+                predictions[i] = hypothesis(weights, X_train[i], rank, num_procs);
             }
 
             updateWeights(X_train, y_train, weights, predictions); 
@@ -308,7 +336,7 @@ int main(int argc, char** argv){
 
         // Cálculo das predicçoes do conjunto de teste pois o treinamento já foi finalizado.    
         for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
-            predictions[i] = hypothesis(weights, X_test[i]);;
+            predictions[i] = hypothesis(weights, X_test[i], rank, num_procs);
         }
 
         saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1); // Salva as estatísticas de teste no arquivo de saída

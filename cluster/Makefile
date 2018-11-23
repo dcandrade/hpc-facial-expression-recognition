@@ -1,9 +1,10 @@
 all: compile run
 compile:
-	g++ -O3 main.cpp -o main.out
+	mpic++ -O3 main.cpp -o main.out
 
 run:
-	./main.out 15640 3730 500 0.001 epoch-scalability/500
+	mpirun -np 3 -machinefile Machinefile /home/equipec/HPC/cluster/main.out
+	#./main.out 15640 3730 500 0.001 epoch-scalability/500
 
 debug:
 	g++ -g main.cpp -o main.out

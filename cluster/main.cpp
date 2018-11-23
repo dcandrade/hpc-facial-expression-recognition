@@ -13,10 +13,10 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <sstream> 
 #include <math.h> 
 #include <time.h>
 #include <mpi.h>
+
 
 
 using namespace std;
@@ -24,7 +24,7 @@ using namespace std;
 int NUM_FEATURES = 128 * 128 + 1; /// Quantidade de pixels + bias
 int NUM_TRAIN_OBSERVATIONS = 15640; /// Quantidade de observações de treino
 int NUM_TEST_OBSERVATIONS = 3730; /// Quantidade de observações de teste
-int NUM_EPOCHS = 500; /// Quantidade de épocas
+int NUM_EPOCHS = 100; /// Quantidade de épocas
 int NUM_ITERATIONS = 5;
 float LEARNING_RATE = 0.001;	 /// Taxa de Apredizado
 string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
@@ -63,13 +63,16 @@ void freeMatrix(float **matrix, int rows){
  * @param pixels Vetor de 48*48 espaços nos quais os pixels serão armazenados
  */
 void parsePixels(string pixels_str, float *pixels){
-    stringstream ss(pixels_str);
     float pixel;
     int i=0;
+    int pos = 0;
+    string token;
+    string delimiter = " ";
     
-    while(ss >> pixel){
-        pixels[i] = pixel / 255;
-        i++;
+    while ((pos = pixels_str.find(delimiter)) != std::string::npos) {
+        token = pixels_str.substr(0, pos);
+        pixels_str.erase(0, pos + delimiter.length());
+        pixels[i]= atoi(token.c_str())/255;
     }
 }
 
@@ -108,14 +111,12 @@ float sigmoid(float z){
  * @param observation Observação para qual o ŷ será calculado
  * @return float ŷ  
  */
-float hypothesis(float *weights, float *observation, int rank, int num_procs){ //observation == xi
+float hypothesis(float *weights, float *observation){ //observation == xi
     float z = 0;
-    int workload = NUM_FEATURES/num_procs;
-    int rank_workload = workload * rank;
 
     //#pragma omp parallel for reduction(+:z)
-    for (int i = rank_workload; i < rank_workload+workload; i++){
-        z += (weights[i] * observation[i]);		
+    for (int i = 0; i < NUM_FEATURES; i++){
+         z += (weights[i] * observation[i]);		
     }
 
     float global_z = 0;
@@ -126,14 +127,12 @@ float hypothesis(float *weights, float *observation, int rank, int num_procs){ /
 }
 
 //Método usado para calcular a função de custo.
-float cost_function(float **X_train, float *y_train, float *predictions, int rank, int num_procs){
+float cost_function(float **X_train, float *y_train, float *predictions){
     float cost = 0;
     float h_xi;
 
-    int workload = NUM_TRAIN_OBSERVATIONS/num_procs;
-    int rank_workload = workload * rank;
-
-    for (int i = rank_workload; i < rank_workload+workload; i++){
+    #pragma omp parallel for private(h_xi) reduction(+:cost)
+    for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
         h_xi = predictions[i];
         float p1 = y_train[i] * log(h_xi);								
         float p2 = (1-y_train[i]) * log(1-h_xi);						
@@ -146,17 +145,14 @@ float cost_function(float **X_train, float *y_train, float *predictions, int ran
     return  cost/NUM_TRAIN_OBSERVATIONS;
 }
 //Método para calcular o gradiente. É passado como parâmetro todas as observações, as respostas e as predições.
-float gradient(float **X_train, float *y_train, float *predictions, int j, int rank, int num_procs){
+float gradient(float **X_train, float *y_train, float *predictions, int j){
 
     float h_xi = 0;
     float *xi;
     float sum = 0;
 
-     int workload = NUM_TRAIN_OBSERVATIONS/num_procs;
-    int rank_workload = workload * rank;
-
     
-    for(int i = rank_workload; i < rank_workload+workload; i++){
+    for(int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
         xi = X_train[i];										
         h_xi = predictions[i];									
         sum += (h_xi - y_train[i])*xi[j];						
@@ -176,10 +172,10 @@ float gradient(float **X_train, float *y_train, float *predictions, int j, int r
  * @param weights Pesos atuais
  * @param predictions Predicões de cada item de X_train utilizando os coeficientes mais recentes
  */
-void updateWeights(float **X_train, float *y_train, float *weights, float *predictions, int rank, int num_procs){ 
-
+void updateWeights(float **X_train, float *y_train, float *weights, float *predictions){ 
+    #pragma omp parallel for
     for(int j = 0; j < NUM_FEATURES; j++){
-	    weights[j] -= gradient(X_train, y_train, predictions, j, rank, num_procs);
+	    weights[j] -= gradient(X_train, y_train, predictions, j);
     }
 }
 
@@ -198,6 +194,7 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
     float tp = 0, tn = 0, fp = 0, fn = 0;
     int pred, real;
 
+    #pragma omp parallel for private(pred, real) reduction(+:tn, fn, fp, tp)
     for(int i = 0; i < size; i++){
         pred = round(predictions[i]);
         real= round(y[i]);
@@ -211,10 +208,17 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
         else
                 tp++;
     }
-    
-    accuracy = (tp + tn)/(tp + fp + fn + tn);
-    precision = tp/(tp + fp);
-    recall = tp/(tp + fn);
+
+    float global_tp = 0, global_tn = 0, global_fp = 0, global_fn = 0;
+
+    MPI_Allreduce(&tp, &global_tp, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&tn, &global_tn, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&fp, &global_fp, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&fn, &global_fn, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+
+    accuracy = (global_tp + global_tn)/(global_tp + global_fp + global_fn + global_tn);
+    precision = global_tp/(global_tp + global_fp);
+    recall = global_tp/(global_tp + global_fn);
     f1 = (2*recall*precision)/(recall + precision);
 
     outputFile << epoch <<  "," << accuracy <<  "," << precision << "," << recall <<  "," << f1 <<  "," << cost << endl;
@@ -229,7 +233,7 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
 void parse_args(int argc, char **argv){
     if(argc < 5){
         cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA"<<endl;
-        exit(EXIT_FAILURE);
+        return;//exit(EXIT_FAILURE);
     }
 
     NUM_TRAIN_OBSERVATIONS = atof(argv[1]);
@@ -293,7 +297,7 @@ int main(int argc, char** argv){
     string line;
     int index = 0, sex, pixelsIndex;
     float pixels[NUM_FEATURES - 1];
-    int workload = NUM_FEATURES/rank;
+    int workload = NUM_FEATURES/num_procs;
 	//cout << "carregando treino" << endl;
     for(int i = rank*workload; i<rank*workload+NUM_TRAIN_OBSERVATIONS; i++){
         getline(trainFile, line);
@@ -328,49 +332,61 @@ int main(int argc, char** argv){
     testFile.close();
     float predictions[NUM_TRAIN_OBSERVATIONS], cost;
 
-   for(int iteration = 0; iteration < NUM_ITERATIONS; iteration++){
-        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+   for(int iteration = 0; iteration < 1; iteration++){
+        time_t seed;
+        time(&seed);
         ofstream outputFile;
-        string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
+        char outputFileName[500];
+        sprintf(outputFileName, "%soutput_%d_epochs_%dtrain_%dtest_rank%d_@%f", OUTPUT_FILE_PREFIX.c_str(), NUM_EPOCHS, NUM_TRAIN_OBSERVATIONS, NUM_TEST_OBSERVATIONS, rank, (float) seed);
+        //string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + (NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
         outputFile.open(outputFileName);
         outputFile << "epoch,accuracy,precision,recall,f1,cost" << endl; // Escreve o cabeçalho dos dados no arquivo de saída
 
         
-        auto start = chrono::system_clock::now(); // Início da contagem do tempo de cômputo
+        time_t start;
+        time (&start);
 
         // Execução das épocas de treinamento
         int epoch = 1;
       
         while(epoch <= NUM_EPOCHS){
+            cout << epoch << endl;
+            #pragma omp parallel for
             for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-                predictions[i] = hypothesis(weights, X_train[i], rank, num_procs);
+                predictions[i] = hypothesis(weights, X_train[i]);
             }
 
-            updateWeights(X_train, y_train, weights, predictions, rank, num_procs); 
-            cost = cost_function(X_train, y_train, predictions, rank, num_procs); 
+            updateWeights(X_train, y_train, weights, predictions); 
+            cost = cost_function(X_train, y_train, predictions); 
             
             saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost);
             epoch ++;
         }
 
-        // Cálculo das predicçoes do conjunto de teste pois o treinamento já foi finalizado.    
+        // Cálculo das predicçoes do conjunto de teste pois o treinamento já foi finalizado. 
+        #pragma omp parallel for
         for (int i = 0; i < NUM_TEST_OBSERVATIONS; i++){
-            predictions[i] = hypothesis(weights, X_test[i], rank, num_procs);
+            predictions[i] = hypothesis(weights, X_test[i]);
         }
 
         saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1); // Salva as estatísticas de teste no arquivo de saída
 
-        auto end = chrono::system_clock::now(); // Fim da contagem do tempo de cômputo
-        long elapsed = chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        
+        time_t end;
+        time(&end); // Fim da contagem do tempo de cô mputo
+
+        double elapsed =  difftime(end,start);
+
         // Escrita do tempo de cômputo no arquivo de saída
         ofstream timeFile;
-        timeFile.open(OUTPUT_FILE_PREFIX+"time.txt", ios_base::app); // Concatena o tempo medido no final do arquivo
+        char timefilestr[200];
+        sprintf(timefilestr, "%stime_rank_%d.txt",rank);
+        timeFile.open(timefilestr, ios_base::app); // Concatena o tempo medido no final do arquivo
         timeFile << elapsed <<endl;
         timeFile.close();
         outputFile.close();
    }
 
+    MPI_Finalize(); 
     // Fecha os arquivos e libera as estruturas dinamicamente alocadas
     freeMatrix(X_train, NUM_TRAIN_OBSERVATIONS);
     freeMatrix(X_test, NUM_TEST_OBSERVATIONS);

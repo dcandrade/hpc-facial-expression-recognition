@@ -250,7 +250,6 @@ int main(int argc, char** argv){
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&num_procs);
 
-    cout << "Procs: " <<num_procs <<endl;
 
     float **X_train, **X_test, *weights, *newWeights;						//definindo matrizes
     float *y_train, *y_test;										//definindo matrizes
@@ -271,7 +270,7 @@ int main(int argc, char** argv){
        test_end += NUM_TEST_OBSERVATIONS % num_procs;
     }
 
-    cout << "Rank: "<< rank << " - Train " << train_start << " -> " << train_end << " - Test " << test_start << " -> " << test_end << endl;
+
 
 
     X_train = allocMatrix(NUM_TRAIN_OBSERVATIONS, NUM_FEATURES);			//alocando espaço 
@@ -355,25 +354,18 @@ int main(int argc, char** argv){
         int epoch = 1;
       
         while(epoch <= NUM_EPOCHS){
-            cout << "Iteração: "<<iteration << ", Epoca: " <<epoch << ", Rank: "<< rank << endl;
 
-            cout << "-- Comeco hipotese "<< rank<< endl; 
             for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
                 predictions[i] = hypothesis(weights, X_train[i]);
             }
-            cout << "-- Comeco Peso "<< rank << endl; 
 
             updateWeights(X_train, y_train, weights, predictions); 
-            cout << "-- Comeco Custo  "<< rank<< endl; 
 
             cost = cost_function(X_train, y_train, predictions); 
 
             if(rank==0){
-                cout << "-- Comeco epoca  "<< rank<< endl; 
                 saveEpoch(epoch, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, cost);
             }
-                        cout << "-- Barreira "<< rank<< endl; 
-            MPI_Barrier(MPI_COMM_WORLD);            
             epoch ++;
         }
 
@@ -385,7 +377,6 @@ int main(int argc, char** argv){
         if(rank==0){
             saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1); // Salva as estatísticas de teste no arquivo de saída
         }
-        MPI_Barrier(MPI_COMM_WORLD);
 
 
         time_t end;
@@ -405,7 +396,6 @@ int main(int argc, char** argv){
             outputFile.close();
         }
 
-        MPI_Barrier(MPI_COMM_WORLD);
 
    }
 
@@ -419,3 +409,4 @@ int main(int argc, char** argv){
     MPI_Finalize(); 
 
 }
+

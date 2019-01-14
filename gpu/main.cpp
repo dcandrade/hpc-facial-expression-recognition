@@ -162,7 +162,7 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
     recall = tp / (tp + fn);
     f1 = (2 * recall * precision) / (recall + precision);
 
-    outputFile << epoch << "," << accuracy << "," << precision << "," << recall << "," << f1 << "," << cost << endl;
+    cout << epoch << "," << accuracy << "," << precision << "," << recall << "," << f1 << "," << cost << endl;
 }
 
 /**
@@ -355,7 +355,7 @@ int main(int argc, char **argv)
         cout << "Got source" << endl;
     }
 
-    cout << KernelSource << endl;
+    //cout << KernelSource << endl;
 
     cl_program program = clCreateProgramWithSource(context, 1, (const char **)&KernelSource, NULL, &error);
 
@@ -393,24 +393,60 @@ int main(int argc, char **argv)
 
     /******** Buffers *******/
     cl_mem buffer_X_train = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM_TRAIN_OBSERVATIONS * NUM_FEATURES * sizeof(float), nullptr, &error);
+
+    if(error){
+        cout << "Error: Failed to allocate device memory! (X_train, "<<error <<")" << endl;
+    }
     
     cl_mem buffer_y_train = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM_TRAIN_OBSERVATIONS * sizeof(float), nullptr, &error);
 
-    //cl_mem buffer_X_test = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM_TEST_OBSERVATIONS * NUM_FEATURES * sizeof(float), nullptr, &error);
+     if(error){
+        cout << "Error: Failed to allocate device memory! (y_train, "<<error <<")" << endl;
+    }
     
-    //cl_mem buffer_y_test = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM_TEST_OBSERVATIONS * sizeof(float), nullptr, &error);
 
     cl_mem buffer_weigths =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_FEATURES * sizeof(float), nullptr, &error);
+
+     if(error){
+        cout << "Error: Failed to allocate device memory! (weigths, "<<error <<")" << endl;
+    }
+    
     
     cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_TRAIN_OBSERVATIONS * sizeof(float), nullptr, &error);
 
+     if(error){
+        cout << "Error: Failed to allocate device memory! (preds, "<<error <<")" << endl;
+    }
+    
+
     cl_mem buffer_costs =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_TRAIN_OBSERVATIONS * sizeof(float), nullptr, &error);
+
+     if(error){
+        cout << "Error: Failed to allocate device memory! (costs, "<<error <<")" << endl;
+    }
+    
+    
 
     cl_mem buffer_NUM_FEATURES =  clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(int), nullptr, &error);
 
+     if(error){
+        cout << "Error: Failed to allocate device memory! (num features, "<<error <<")" << endl;
+    }
+    
+
     cl_mem buffer_NUM_TRAIN_OBSERVATIONS =  clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(int), nullptr, &error);
 
+     if(error){
+        cout << "Error: Failed to allocate device memory! (num train, "<<error <<")" << endl;
+    }
+    
+
     cl_mem buffer_LEARNING_RATE =  clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float), nullptr, &error);
+
+     if(error){
+        cout << "Error: Failed to allocate device memory! (lr, "<<error <<")" << endl;
+    }
+    
 
 
     if(!buffer_X_train                  || 
@@ -423,17 +459,18 @@ int main(int argc, char **argv)
         !buffer_LEARNING_RATE
         ){
         printf("Error: Failed to allocate device memory!\n");
+        cout << "x: "<<buffer_X_train << ", y: " << buffer_y_train << ", w: " << buffer_weigths << ", preds:" << buffer_predictions << " costs:" << buffer_costs << endl;
         //exit(1);
     }
 
-    error = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&buffer_X_train);
-    error |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&buffer_y_train);
-    error |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&buffer_weigths);
-    error |= clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&buffer_predictions);
-    error |= clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&buffer_costs);
-    error |= clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&buffer_NUM_FEATURES);
-    error |= clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&buffer_NUM_TRAIN_OBSERVATIONS);
-    error |= clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&buffer_LEARNING_RATE);
+    error  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &buffer_X_train);
+    error |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &buffer_y_train);
+    error |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &buffer_weigths);
+    error |= clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *) &buffer_predictions);
+    error |= clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *) &buffer_costs);
+    error |= clSetKernelArg(kernel, 5, sizeof(int), (void *) &NUM_FEATURES);
+    error |= clSetKernelArg(kernel, 6, sizeof(int), (void *) &NUM_TRAIN_OBSERVATIONS);
+    error |= clSetKernelArg(kernel, 7, sizeof(float), (void *) &LEARNING_RATE);
 
 
     if (error != CL_SUCCESS)
@@ -444,30 +481,41 @@ int main(int argc, char **argv)
 
     size_t localWorkSize[2], globalWorkSize[2];
 
-    localWorkSize[0] = 32;
-    localWorkSize[1] = 32;
-    globalWorkSize[0] = 1024;
-    globalWorkSize[1] = 1024;
+    localWorkSize[0] = 16;
+    localWorkSize[1] = 16;
+    globalWorkSize[0] = 256;
+    globalWorkSize[1] = 256;
 
     /******** End Buffers ********/
 
-    error = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 
-   0, NULL, NULL);
+        error = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
 
-   if (error != CL_SUCCESS)
-   {
-       printf("Error: Failed to execute kernel! %d\n", error);
-       //exit(1);
-   }
+        if (error != CL_SUCCESS)
+        {
+            printf("Error: Failed to execute kernel! %d\n", error);
+            //exit(1);
+        }
+
+        error = clFinish(commands);
+
+        if(error){
+            cout << "Error while running kernel "<< error << endl;
+        }
+
+        error = clEnqueueReadBuffer(commands, buffer_predictions, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), predictions, 0, NULL, NULL);
+
+        ofstream outputFile;
+        saveEpoch(0, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, -1);
+    
 
    clReleaseMemObject(buffer_X_train);
    clReleaseMemObject(buffer_y_train);
    clReleaseMemObject(buffer_weigths);
    clReleaseMemObject(buffer_predictions);
    clReleaseMemObject(buffer_costs);
-   clReleaseMemObject(buffer_NUM_FEATURES);
-   clReleaseMemObject(buffer_NUM_TRAIN_OBSERVATIONS);
-   clReleaseMemObject(buffer_LEARNING_RATE);
+   //clReleaseMemObject(buffer_NUM_FEATURES);
+   //clReleaseMemObject(buffer_NUM_TRAIN_OBSERVATIONS);
+   //clReleaseMemObject(buffer_LEARNING_RATE);
 
    clReleaseKernel(kernel);
    clReleaseProgram(program);

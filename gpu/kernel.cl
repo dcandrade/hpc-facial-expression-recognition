@@ -8,9 +8,10 @@ __kernel void logreg(
     int NUM_TRAIN_OBSERVATIONS,
     float LEARNING_RATE)
 {
-   // predictions
+    for(int j= 0; j < 100; j++){
    int tx = get_global_id(0); 
 
+   // predictions
    float value = 0;
 
    for (unsigned int i = 0; i < NUM_FEATURES; i++) {
@@ -39,4 +40,5 @@ __kernel void logreg(
    float p2 = (1-y_train[tx]) * log(1-h_xi);
 
    costs[tx] = (-p1-p2);
+    }
 }

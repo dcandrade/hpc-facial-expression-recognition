@@ -256,195 +256,123 @@ int main(int argc, char **argv)
 
     float predictions[NUM_TRAIN_OBSERVATIONS], cost;
     
-    int error;
+    int err;
     /******** Initial Variables ********/
-    cl_uint platformIdCount = 0;
-    clGetPlatformIDs(0, nullptr, &platformIdCount);
+    cl_uint dev_cnt = 0;
+   clGetPlatformIDs(0, 0, &dev_cnt);
+	
+   cl_platform_id platform_ids[100];
+   clGetPlatformIDs(dev_cnt, platform_ids, NULL);
+	
+   // Connect to a compute device
+   cl_device_id device_id;             // compute device id 
+   cl_context context;                 // compute context
+   cl_command_queue commands;          // compute command queue
+   cl_program program;                 // compute program
+   cl_kernel kernel;          
 
-    std::vector<cl_platform_id> platformIds(platformIdCount);
-    clGetPlatformIDs(platformIdCount, platformIds.data(), nullptr);
+   int gpu = 1;
 
-    cl_uint deviceIdCount = 0;
-    clGetDeviceIDs(platformIds[0], CL_DEVICE_TYPE_GPU, 0, nullptr, &deviceIdCount);
+   err = clGetDeviceIDs(platform_ids[0], gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
+   if (err != CL_SUCCESS)
+   {
+       printf("Error: Failed to create a device group!\n");
+       //return EXIT_FAILURE;
+   }
+  
+   // Create a compute context 
+   context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+   if (!context)
+   {
+       printf("Error: Failed to create a compute context!\n");
+       //return EXIT_FAILURE;
+   }
 
-    std::vector<cl_device_id> deviceIds(deviceIdCount);
-    clGetDeviceIDs(platformIds[0], CL_DEVICE_TYPE_ALL, deviceIdCount, deviceIds.data(), nullptr);
+   // Create a command commands
+   commands = clCreateCommandQueue(context, device_id, 0, &err);
+   if (!commands)
+   {
+       printf("Error: Failed to create a command commands!\n");
+       //return EXIT_FAILURE;
+   }
 
-    int i = 0;
-    cl_char string[10240] = {0};
-    // Print out the platform name
-    error = clGetPlatformInfo(platformIds[i], CL_PLATFORM_NAME, sizeof(string), &string, NULL);
-    //checkError(error, "Getting platform name");
-    printf("Platform: %s\n", string);
+   // Create the compute program from the source file
+   char *KernelSource;
+   long lFileSize;
 
-    // Print out the platform vendor
-    error = clGetPlatformInfo(platformIds[i], CL_PLATFORM_VENDOR, sizeof(string), &string, NULL);
-    //checkError(error, "Getting platform vendor");
-    printf("Vendor: %s\n", string);
+   lFileSize = LoadOpenCLKernel("kernel.cl", &KernelSource);
+   if( lFileSize < 0L ) {
+       perror("File read failed");
+       //return 1;
+   }
 
-    // Print out the platform OpenCL version
-    error = clGetPlatformInfo(platformIds[i], CL_PLATFORM_VERSION, sizeof(string), &string, NULL);
-    //checkError(err, "Getting platform OpenCL version");
-    printf("Version: %s\n", string);
+   program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &err);
+   if (!program)
+   {
+       printf("Error: Failed to create compute program!\n");
+       //return EXIT_FAILURE;
+   }
 
-    if (error != CL_SUCCESS)
-    {
-        cout << "OpenCL error while getting info" << error << endl;
-        exit(EXIT_FAILURE);
-    }
+   // Build the program executable
+   err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+   if (err != CL_SUCCESS)
+   {
+       size_t len;
+       char buffer[2048];
+       printf("Error: Failed to build program executable!\n");
+       clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+       printf("%s\n", buffer);
+       //exit(1);
+   }
 
-    /******** End Initial Variables ********/
-
-    if (error != CL_SUCCESS)
-    {
-        cout << "OpenCL error while allocating buffers" << error << endl;
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
-        cout << "OpenCL buffers done" << endl;
-    }
-
-    cl_uint num_devices;
-    error = clGetDeviceIDs(platformIds[i], CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
-
-    // Get the device IDs
-    cl_device_id device[num_devices];
-    error = clGetDeviceIDs(platformIds[i], CL_DEVICE_TYPE_ALL, num_devices, device, NULL);
-    //checkError(err, "Getting devices");
-    printf("Number of devices: %d\n", num_devices);
-
-    // Get device name
-    error = clGetDeviceInfo(device[0], CL_DEVICE_NAME, sizeof(string), &string, NULL);
-    //checkError(err, "Getting device name");
-    printf("Device Name: %s\n", string);
-
-    const cl_context_properties contextProperties[] = {CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platformIds[0]), 0, 0};
-
-    cl_context context = clCreateContext(contextProperties, deviceIdCount, deviceIds.data(), nullptr, nullptr, &error);
-
-    if (error != CL_SUCCESS)
-    {
-        cout << "OpenCL error while creating context " << error << endl;
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
-        cout << "--> OpenCL context created" << endl;
-    }
-
-    cl_command_queue commands = clCreateCommandQueue(context, device[0], 0, &error);
-    if (!commands)
-    {
-        printf("Error: Failed to create a command commands!\n");
-        return EXIT_FAILURE;
-    }
-
-    char *KernelSource;
-    long lFileSize;
-
-    lFileSize = LoadOpenCLKernel("kernel.cl", &KernelSource);
-
-    if (lFileSize < 0L)
-    {
-        cout << "File read failed" << endl;
-        return 1;
-    }
-    else
-    {
-        cout << "Got source" << endl;
-    }
-
-    //cout << KernelSource << endl;
-
-    cl_program program = clCreateProgramWithSource(context, 1, (const char **)&KernelSource, NULL, &error);
-
-    if (!program)
-    {
-        printf("Error: Failed to create compute program!\n");
-        return EXIT_FAILURE;
-    }
-
-    error = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-    if (error != CL_SUCCESS)
-    {
-        size_t len;
-        char buffer[2048];
-        printf("Error: Failed to build program executable!\n");
-        clGetProgramBuildInfo(program, device[0], CL_PROGRAM_BUILD_LOG, sizeof(buffer),
-                              buffer, &len);
-
-        printf("%s\n", buffer);
-        exit(1);
-    }
-
-    cl_kernel kernel = clCreateKernel(program, "logreg", &error);
-
-    if (!kernel || error != CL_SUCCESS)
-    {
-        printf("Error: Failed to create compute kernel!\n");
-        cout << "error code " << error << endl;
-        exit(1);
-    }
-    else
-    {
-        cout << "Kernel created" << endl;
-    }
+   // Create the compute kernel in the program we wish to run
+   //
+   kernel = clCreateKernel(program, "logreg", &err);
+   if (!kernel || err != CL_SUCCESS)
+   {
+       printf("Error: Failed to create compute kernel!\n");
+       //exit(1);
+   }
 
     /******** Buffers *******/
-    cl_mem buffer_X_train = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM_TRAIN_OBSERVATIONS * NUM_FEATURES * sizeof(float), nullptr, &error);
+    int X_size = NUM_TRAIN_OBSERVATIONS * NUM_FEATURES * sizeof(float);
+    int y_size = NUM_TRAIN_OBSERVATIONS * sizeof(float);
 
-    if(error){
-        cout << "Error: Failed to allocate device memory! (X_train, "<<error <<")" << endl;
+    cl_mem buffer_X_train = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, X_size, X_train, &err);
+
+    if(err){
+        cout << "Error: Failed to allocate device memory! (X_train, "<<err <<")" << endl;
     }
     
-    cl_mem buffer_y_train = clCreateBuffer(context, CL_MEM_READ_ONLY, NUM_TRAIN_OBSERVATIONS * sizeof(float), nullptr, &error);
+    cl_mem buffer_y_train = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, y_size, y_train, &err);
 
-     if(error){
-        cout << "Error: Failed to allocate device memory! (y_train, "<<error <<")" << endl;
-    }
-    
-
-    cl_mem buffer_weigths =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_FEATURES * sizeof(float), nullptr, &error);
-
-     if(error){
-        cout << "Error: Failed to allocate device memory! (weigths, "<<error <<")" << endl;
-    }
-    
-    
-    cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_TRAIN_OBSERVATIONS * sizeof(float), nullptr, &error);
-
-     if(error){
-        cout << "Error: Failed to allocate device memory! (preds, "<<error <<")" << endl;
+     if(err){
+        cout << "Error: Failed to allocate device memory! (y_train, "<<err <<")" << endl;
     }
     
 
-    cl_mem buffer_costs =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_TRAIN_OBSERVATIONS * sizeof(float), nullptr, &error);
+    cl_mem buffer_weigths =  clCreateBuffer(context,  CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, NUM_FEATURES * sizeof(float), weights, &err);
 
-     if(error){
-        cout << "Error: Failed to allocate device memory! (costs, "<<error <<")" << endl;
+     if(err){
+        cout << "Error: Failed to allocate device memory! (weigths, "<<err <<")" << endl;
     }
     
     
+    cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, y_size, predictions, &err);
 
-    cl_mem buffer_NUM_FEATURES =  clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(int), nullptr, &error);
-
-     if(error){
-        cout << "Error: Failed to allocate device memory! (num features, "<<error <<")" << endl;
+     if(err){
+        cout << "Error: Failed to allocate device memory! (preds, "<<err <<")" << endl;
     }
+
+
+    float *costs;	
+
+    costs = (float *) malloc(NUM_FEATURES * 256 * sizeof(float));
     
+    cl_mem buffer_costs =  clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, NUM_FEATURES * sizeof(float) * 256, costs, &err);
 
-    cl_mem buffer_NUM_TRAIN_OBSERVATIONS =  clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(int), nullptr, &error);
-
-     if(error){
-        cout << "Error: Failed to allocate device memory! (num train, "<<error <<")" << endl;
-    }
-    
-
-    cl_mem buffer_LEARNING_RATE =  clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float), nullptr, &error);
-
-     if(error){
-        cout << "Error: Failed to allocate device memory! (lr, "<<error <<")" << endl;
+     if(err){
+        cout << "Error: Failed to allocate device memory! (costs, "<<err <<")" << endl;
     }
     
 
@@ -453,29 +381,46 @@ int main(int argc, char **argv)
         !buffer_y_train                 ||
         !buffer_weigths                 ||
         !buffer_predictions             ||
-        !buffer_costs                   ||
-        !buffer_NUM_FEATURES            ||
-        !buffer_NUM_TRAIN_OBSERVATIONS  ||
-        !buffer_LEARNING_RATE
+        !buffer_costs                   
         ){
         printf("Error: Failed to allocate device memory!\n");
         cout << "x: "<<buffer_X_train << ", y: " << buffer_y_train << ", w: " << buffer_weigths << ", preds:" << buffer_predictions << " costs:" << buffer_costs << endl;
         //exit(1);
     }
 
-    error  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &buffer_X_train);
-    error |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &buffer_y_train);
-    error |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &buffer_weigths);
-    error |= clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *) &buffer_predictions);
-    error |= clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *) &buffer_costs);
-    error |= clSetKernelArg(kernel, 5, sizeof(int), (void *) &NUM_FEATURES);
-    error |= clSetKernelArg(kernel, 6, sizeof(int), (void *) &NUM_TRAIN_OBSERVATIONS);
-    error |= clSetKernelArg(kernel, 7, sizeof(float), (void *) &LEARNING_RATE);
+
+    //err = clEnqueueWriteBuffer(commands, buffer_X_train, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * NUM_FEATURES * sizeof(float), X_train, 0, NULL, NULL);
+
+    if(err){
+        cout << "Erro escrita";
+    }
+
+   // err = clEnqueueWriteBuffer(commands, buffer_y_train, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), y_train, 0, NULL, NULL);
+    
+    //err |= clEnqueueWriteBuffer(commands, buffer_weigths, CL_TRUE, 0, NUM_FEATURES * sizeof(float), weights, 0, NULL, NULL);
+
+    //err |= clEnqueueWriteBuffer(commands, buffer_predictions, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), predictions, 0, NULL, NULL);
+
+  //  err |= clEnqueueWriteBuffer(commands, buffer_costs, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * 256 * sizeof(float), costs, 0, NULL, NULL);
+
+    if(err != CL_SUCCESS){
+            cout << "Erro escrita";
+    }
+
+    err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &buffer_X_train);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &buffer_y_train);
+    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &buffer_weigths);
+    err |= clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *) &buffer_predictions);
+    err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *) &buffer_costs);
+    err |= clSetKernelArg(kernel, 5, sizeof(int), (void *) &NUM_FEATURES);
+    err |= clSetKernelArg(kernel, 6, sizeof(int), (void *) &NUM_TRAIN_OBSERVATIONS);
+    err |= clSetKernelArg(kernel, 7, sizeof(float), (void *) &LEARNING_RATE);
+    err |= clSetKernelArg(kernel, 8, sizeof(float), (void *) &NUM_EPOCHS);
 
 
-    if (error != CL_SUCCESS)
+    if (err != CL_SUCCESS)
     {
-        printf("Error: Failed to set kernel arguments! %d\n", error);
+        printf("Error: Failed to set kernel arguments! %d\n", err);
         //exit(1);
     }
 
@@ -487,35 +432,43 @@ int main(int argc, char **argv)
     globalWorkSize[1] = 256;
 
     /******** End Buffers ********/
+    //for(int jj= 0; jj< NUM_EPOCHS; jj++){
+        err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
 
-        error = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
-
-        if (error != CL_SUCCESS)
+        if (err != CL_SUCCESS)
         {
-            printf("Error: Failed to execute kernel! %d\n", error);
+            printf("Error: Failed to execute kernel! %d\n", err);
             //exit(1);
         }
 
-        error = clFinish(commands);
+        //err = clFinish(commands);
 
-        if(error){
-            cout << "Error while running kernel "<< error << endl;
+        if(err){
+            cout << "Error while running kernel "<< err << endl;
+        }
+        cout << "Finished w/ code "<< err << endl;
+
+        err = clEnqueueReadBuffer(commands, buffer_predictions, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), predictions, 0, NULL, NULL);
+
+        if(err != CL_SUCCESS){
+            cout << "Error while getting output" << endl;
         }
 
-        error = clEnqueueReadBuffer(commands, buffer_predictions, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), predictions, 0, NULL, NULL);
+        cout << "global "<< predictions[1] << endl;
+        cout << "local "<< predictions[0] << endl;
+        cout << "obs "<< predictions[2] << endl;
+        cout << "check "<< predictions[3] << endl;
+
 
         ofstream outputFile;
         saveEpoch(0, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, -1);
-    
+   // }
 
    clReleaseMemObject(buffer_X_train);
    clReleaseMemObject(buffer_y_train);
    clReleaseMemObject(buffer_weigths);
    clReleaseMemObject(buffer_predictions);
    clReleaseMemObject(buffer_costs);
-   //clReleaseMemObject(buffer_NUM_FEATURES);
-   //clReleaseMemObject(buffer_NUM_TRAIN_OBSERVATIONS);
-   //clReleaseMemObject(buffer_LEARNING_RATE);
 
    clReleaseKernel(kernel);
    clReleaseProgram(program);

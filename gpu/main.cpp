@@ -33,6 +33,8 @@ int NUM_EPOCHS = 500;               /// Quantidade de épocas
 int NUM_ITERATIONS = 5;
 float LEARNING_RATE = 0.001;            /// Taxa de Apredizado
 string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
+int LOCAL_WORK_SIZE = 16;
+int GLOBAL_WORK_SIZE = 1024;
 
 /**Source: http://www.es.ele.tue.nl/~mwijtvliet/5KK73/?page=mmopencl**/
 long LoadOpenCLKernel(char const *path, char **buf)
@@ -173,7 +175,7 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
  */
 void parse_args(int argc, char **argv)
 {
-    if (argc < 5)
+    if (argc < 7)
     {
         cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA" << endl;
         exit(EXIT_FAILURE);
@@ -185,6 +187,8 @@ void parse_args(int argc, char **argv)
     LEARNING_RATE = atof(argv[4]);
     OUTPUT_FILE_PREFIX += argv[5];
     OUTPUT_FILE_PREFIX += "/";
+    LOCAL_WORK_SIZE = atof(argv[6]);
+    GLOBAL_WORK_SIZE = atof(argv[7]);
 }
 
 int main(int argc, char **argv)
@@ -253,8 +257,6 @@ int main(int argc, char **argv)
 
     trainFile.close();
     testFile.close(); 
-
-    float predictions[NUM_TRAIN_OBSERVATIONS], cost;
     
     int err;
     /******** Initial Variables ********/
@@ -351,25 +353,20 @@ int main(int argc, char **argv)
     }
     
 
-    cl_mem buffer_weigths =  clCreateBuffer(context,  CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, NUM_FEATURES * sizeof(float), weights, &err);
+    cl_mem buffer_weigths =  clCreateBuffer(context,  CL_MEM_READ_WRITE, NUM_FEATURES * sizeof(float), NULL, &err);
 
      if(err){
         cout << "Error: Failed to allocate device memory! (weigths, "<<err <<")" << endl;
     }
     
     
-    cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, y_size, predictions, &err);
+    cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE, y_size, NULL, &err);
 
      if(err){
         cout << "Error: Failed to allocate device memory! (preds, "<<err <<")" << endl;
     }
-
-
-    float *costs;	
-
-    costs = (float *) malloc(NUM_FEATURES * 256 * sizeof(float));
     
-    cl_mem buffer_costs =  clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, NUM_FEATURES * sizeof(float) * 256, costs, &err);
+    cl_mem buffer_costs =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_FEATURES/4 * sizeof(float) * GLOBAL_WORK_SIZE, NULL, &err);
 
      if(err){
         cout << "Error: Failed to allocate device memory! (costs, "<<err <<")" << endl;
@@ -387,21 +384,6 @@ int main(int argc, char **argv)
         cout << "x: "<<buffer_X_train << ", y: " << buffer_y_train << ", w: " << buffer_weigths << ", preds:" << buffer_predictions << " costs:" << buffer_costs << endl;
         //exit(1);
     }
-
-
-    //err = clEnqueueWriteBuffer(commands, buffer_X_train, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * NUM_FEATURES * sizeof(float), X_train, 0, NULL, NULL);
-
-    if(err){
-        cout << "Erro escrita";
-    }
-
-   // err = clEnqueueWriteBuffer(commands, buffer_y_train, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), y_train, 0, NULL, NULL);
-    
-    //err |= clEnqueueWriteBuffer(commands, buffer_weigths, CL_TRUE, 0, NUM_FEATURES * sizeof(float), weights, 0, NULL, NULL);
-
-    //err |= clEnqueueWriteBuffer(commands, buffer_predictions, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), predictions, 0, NULL, NULL);
-
-  //  err |= clEnqueueWriteBuffer(commands, buffer_costs, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * 256 * sizeof(float), costs, 0, NULL, NULL);
 
     if(err != CL_SUCCESS){
             cout << "Erro escrita";
@@ -428,11 +410,16 @@ int main(int argc, char **argv)
 
     localWorkSize[0] = 16;
     localWorkSize[1] = 16;
-    globalWorkSize[0] = 256;
-    globalWorkSize[1] = 256;
+    globalWorkSize[0] = 1024;
+    globalWorkSize[1] = 1024;
+
+    float *predictions = (float*) malloc(NUM_TRAIN_OBSERVATIONS * sizeof(float));
 
     /******** End Buffers ********/
-    //for(int jj= 0; jj< NUM_EPOCHS; jj++){
+    for(int rep= 0; rep< 5; rep++){
+        cout << "-->> REP "<< rep<< endl;
+        auto start = chrono::system_clock::now();
+
         err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
 
         if (err != CL_SUCCESS)
@@ -441,12 +428,16 @@ int main(int argc, char **argv)
             //exit(1);
         }
 
-        //err = clFinish(commands);
+        err = clFinish(commands);
+
+        auto end = chrono::system_clock::now(); // Fim da contagem do tempo de cômputo
+        long elapsed = chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
 
         if(err){
-            cout << "Error while running kernel "<< err << endl;
+            cout << "Error while running kernel. Error code: "<< err << endl;
         }
-        cout << "Finished w/ code "<< err << endl;
+
 
         err = clEnqueueReadBuffer(commands, buffer_predictions, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), predictions, 0, NULL, NULL);
 
@@ -454,15 +445,25 @@ int main(int argc, char **argv)
             cout << "Error while getting output" << endl;
         }
 
-        cout << "global "<< predictions[1] << endl;
-        cout << "local "<< predictions[0] << endl;
-        cout << "obs "<< predictions[2] << endl;
-        cout << "check "<< predictions[3] << endl;
+        //cout << "global "<< predictions[1] << endl;
+        //cout << "local "<< predictions[0] << endl;
+        //cout << "obs "<< predictions[2] << endl;
+        //cout << "check "<< predictions[3] << endl;
 
-
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         ofstream outputFile;
+        string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
+        outputFile.open(outputFileName);
+        outputFile << "epoch,accuracy,precision,recall,f1,cost" << endl; // Escreve o cabeçalho dos dados no arquivo de saída
         saveEpoch(0, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, -1);
-   // }
+        outputFile.close();
+
+        ofstream timeFile;
+        timeFile.open(OUTPUT_FILE_PREFIX+"time.txt", ios_base::app); // Concatena o tempo medido no final do arquivo
+        timeFile << elapsed <<endl;
+        timeFile.close();
+        outputFile.close();
+    }
 
    clReleaseMemObject(buffer_X_train);
    clReleaseMemObject(buffer_y_train);
@@ -470,8 +471,8 @@ int main(int argc, char **argv)
    clReleaseMemObject(buffer_predictions);
    clReleaseMemObject(buffer_costs);
 
-   clReleaseKernel(kernel);
    clReleaseProgram(program);
+   clReleaseKernel(kernel);
    clReleaseCommandQueue(commands);
    clReleaseContext(context);
    
@@ -480,5 +481,6 @@ int main(int argc, char **argv)
    free(y_test);
    free(y_train);
    free(weights);
+   free(predictions);
 
 }

@@ -408,8 +408,8 @@ int main(int argc, char **argv)
 
     size_t localWorkSize[2], globalWorkSize[2];
 
-    localWorkSize[0] = 16;
-    localWorkSize[1] = 16;
+    localWorkSize[0] = 256;
+    localWorkSize[1] = 256;
     globalWorkSize[0] = 1024;
     globalWorkSize[1] = 1024;
 

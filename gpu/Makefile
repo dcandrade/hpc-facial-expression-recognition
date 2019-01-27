@@ -33,29 +33,29 @@ setup-experiments:
 
 
 scalability-epoch-experiments:
-	./main.out 10640 3730 1000 0.001 epoch-scalability/1000 256 1024; \
-	./main.out 10640 3730 500 0.001 epoch-scalability/500 256 1024; \
-	./main.out 10640 3730 250 0.001 epoch-scalability/250 12566 1024; \
+	./main.out 15640 3730 1000 0.001 epoch-scalability/1000 256 1024; \
+	./main.out 15640 3730 500 0.001 epoch-scalability/500 256 1024; \
+	./main.out 15640 3730 250 0.001 epoch-scalability/250 12566 1024; \
 
 scalability-size-experiments:
-	./main.out 10640 3730 500 0.001 size-scalability/15640 256 1024; \
-	./main.out 5640 3730 500 0.001 size-scalability/11730 256 1024; \
-	./main.out 2640 3730 500 0.001 size-scalability/5865 256 1024; \
+	./main.out 15640 3730 500 0.001 size-scalability/15640 256 1024; \
+	./main.out 11730 3730 500 0.001 size-scalability/11730 256 1024; \
+	./main.out 5865 3730 500 0.001 size-scalability/5865 256 1024; \
 
 scalability-local-experiments:
-	./main.out 10640 3730 500 0.001 local-work-scalability/256 256 1024; \
-	./main.out 10640 3730 500 0.001 local-work-scalability/128 128 1024; \
-	./main.out 10640 3730 500 0.001 local-work-scalability/64 64 1024; \
-	./main.out 10640 3730 500 0.001 local-work-scalability/32 32 1024; \
-	./main.out 10640 3730 500 0.001 local-work-scalability/16 16 1024; \
+	./main.out 15640 3730 500 0.001 local-work-scalability/256 256 1024; \
+	./main.out 15640 3730 500 0.001 local-work-scalability/128 128 1024; \
+	./main.out 15640 3730 500 0.001 local-work-scalability/64 64 1024; \
+	./main.out 15640 3730 500 0.001 local-work-scalability/32 32 1024; \
+	./main.out 15640 3730 500 0.001 local-work-scalability/16 16 1024; \
 
 
 scalability-global-experiments:
-	./main.out 10640 3730 500 0.001 global-work-scalability/1024 256 1024; \
-	./main.out 10640 3730 500 0.001 global-work-scalability/512 256 512; \
-	./main.out 10640 3730 500 0.001 global-work-scalability/256 256 256; \
-	./main.out 10640 3730 500 0.001 global-work-scalability/128 256 128; \
-	./main.out 10640 3730 500 0.001 global-work-scalability/64 256 64; \
+	./main.out 15640 3730 500 0.001 global-work-scalability/1024 256 1024; \
+	./main.out 15640 3730 500 0.001 global-work-scalability/512 256 512; \
+	./main.out 15640 3730 500 0.001 global-work-scalability/256 256 256; \
+	./main.out 15640 3730 500 0.001 global-work-scalability/128 256 128; \
+	./main.out 15640 3730 500 0.001 global-work-scalability/64 256 64; \
 
 	
 experiments: compile scalability-size-experiments scalability-local-experiments scalability-global-experiments

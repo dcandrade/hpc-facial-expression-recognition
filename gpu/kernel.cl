@@ -7,22 +7,21 @@ __kernel void logreg(
     int NUM_FEATURES,
     int NUM_TRAIN_OBSERVATIONS,
     float LEARNING_RATE,
-    int NUM_epochOCHS)
-{
+    int NUM_EPOCHS){
     
    const int localId = get_global_id(0);
    const int NUM_WORK_ITEMS = get_global_size(0);
    const int localExamplesStart = NUM_TRAIN_OBSERVATIONS/NUM_WORK_ITEMS * localId;
 
-   for(int epoch = 0; epoch < NUM_epochOCHS; epoch++){
+   for(int epoch = 0; epoch < NUM_EPOCHS; epoch++){
 
         for(int k = 0; k < NUM_FEATURES; k++){
-                partialGradients[localId*NUM_FEATURES + k] = 0.0f;
-                weights[k] = 0.0f;
+                partialGradients[localId*NUM_FEATURES + k] = 0;
+                weights[k] = 0;
         }
 
         for (int i = 0; i < NUM_TRAIN_OBSERVATIONS/NUM_WORK_ITEMS; i++){
-            float z = 0.0f;
+            float z = 0;
 
             for (int j = 0; j < NUM_FEATURES; j++){
                 z += X_train[(localExamplesStart + i) * NUM_FEATURES + j] * weights[j];
@@ -36,25 +35,21 @@ __kernel void logreg(
             }
         }
 
-        barrier(CLK_LOCAL_MEM_FENCE);
+        barrier(CLK_GLOBAL_MEM_FENCE);
 
         for(int offset = NUM_WORK_ITEMS/2; offset > 0; offset >>= 1){ 
             for (int k = 0; k < NUM_FEATURES; k++)
                 partialGradients[localId*NUM_FEATURES + k] += partialGradients[(localId+offset)*NUM_FEATURES + k]; 
-            barrier(CLK_LOCAL_MEM_FENCE);
+            barrier(CLK_GLOBAL_MEM_FENCE);
         }
-        barrier(CLK_LOCAL_MEM_FENCE);
+        
+        barrier(CLK_GLOBAL_MEM_FENCE);
 
 
-        if(localId == 0){
-            for(int j = 0; j < NUM_FEATURES; j++){
-                weights[j] += (LEARNING_RATE/NUM_TRAIN_OBSERVATIONS) * partialGradients[j];
-            }
-
+        if(localId < NUM_FEATURES){
+            weights[localId] += (LEARNING_RATE/NUM_TRAIN_OBSERVATIONS) * partialGradients[localId];
         }
 
         barrier(CLK_GLOBAL_MEM_FENCE);
-   }
-    
-    barrier(CLK_GLOBAL_MEM_FENCE);
+   }    
 }

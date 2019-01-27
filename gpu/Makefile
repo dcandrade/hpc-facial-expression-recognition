@@ -4,7 +4,7 @@ compile:
 	g++ -lOpenCL -O3 main.cpp -o main.out
 
 run:
-	./main.out 10640 3730 500 0.001 epoch-scalability/500 16 1024
+	./main.out 10640 3730 500 0.001 epoch-scalability/500 256 1024
 
 debug:
 	g++ -g main.cpp -o main.out

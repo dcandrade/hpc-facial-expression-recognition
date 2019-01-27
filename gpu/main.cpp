@@ -360,7 +360,7 @@ int main(int argc, char **argv) {
             cout << "Error: Failed to allocate device memory! (preds, "<<err <<")" << endl;
         }
         
-        cl_mem buffer_gradients =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_FEATURES/4 * sizeof(float) * GLOBAL_WORK_SIZE, NULL, &err);
+        cl_mem buffer_gradients =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_FEATURES * sizeof(float) * LOCAL_WORK_SIZE, NULL, &err);
 
         if(err){
             cout << "Error: Failed to allocate device memory! (costs, "<<err <<")" << endl;

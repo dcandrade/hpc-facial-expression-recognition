@@ -34,11 +34,8 @@ string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
  * @param cols Quantidade de colunas
  * @return float** 
  */
-float **allocMatrix(int rows, int cols){
-    float **matrix = (float **)malloc(rows * sizeof(float *)); 
-    for (int i=0; i<rows; i++) 
-         matrix[i] = (float *)malloc(cols * sizeof(float)); 
-
+float *allocMatrix(int rows, int cols){
+    float * matrix = (float *) malloc(rows * cols * sizeof(float)); 
     return matrix;
 }
 
@@ -48,9 +45,7 @@ float **allocMatrix(int rows, int cols){
  * @param matrix Ponteiro para a matriz a ser liberada
  * @param rows Quantidade de linhas da matriz
  */
-void freeMatrix(float **matrix, int rows){
-    for(int i=0; i<rows; i++) 
-        free(matrix[i]);
+void freeMatrix(float *matrix){
     free(matrix);
 }
 
@@ -80,12 +75,13 @@ void parsePixels(string pixels_str, float *pixels){
  * @param sex Emoção normalizada (0 ou 1)
  * @param pixels Vetor de 48*48 posições contendo os valores normalizado de cada pixel
  */
-void addToDataset(float **X, float *y, int index, int sex, float* pixels){
-    X[index][0] = 1;
+void addToDataset(float *X, float *y, int index, int sex, float* pixels){
+    int maskedIndex = index * NUM_FEATURES;
+    X[maskedIndex] = 1;
     y[index] = sex;
 
     for (int i = 1; i < NUM_FEATURES; i++){
-        X[index][i] = pixels[i-1];
+        X[maskedIndex + i] = pixels[i-1];
     }
 }
 
@@ -129,19 +125,7 @@ float cost_function(float **X_train, float *y_train, float *predictions){
 
     return  cost/NUM_TRAIN_OBSERVATIONS;
 }
-//Método para calcular o gradiente. É passado como parâmetro todas as observações, as respostas e as predições.
-float gradient(float **X_train, float *y_train, float *predictions, int j){
-    float h_xi = 0;
-    float *xi;
-    float sum = 0;
-    
-    for(int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
-        xi = X_train[i];										///pega uma das observações
-        h_xi = predictions[i];									///pega uma das predições (resposta prevista)
-        sum += (h_xi - y_train[i])*xi[j];						///faz o somatório da diferença do vetor de resposta prevista pelo vetor de resposta multiplicado pelo vetor contendo os valores de observação
-    }
-    return (LEARNING_RATE/NUM_TRAIN_OBSERVATIONS) * sum;
-}
+
 
 /**
  * @brief Recalcula e atualiza os coeficientes de regressão (pesos)
@@ -153,7 +137,20 @@ float gradient(float **X_train, float *y_train, float *predictions, int j){
  */
 void updateWeights(float **X_train, float *y_train, float *weights, float *predictions){    
     for(int j = 0; j < NUM_FEATURES; j++){
-	    weights[j] -= gradient(X_train, y_train, predictions, j);
+        float h_xi = 0;
+        float *xi;
+        float sum = 0;
+        
+        // gradient
+        for(int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
+            xi = X_train[i];										
+            h_xi = predictions[i];
+            sum += (h_xi - y_train[i])*xi[j];
+        }
+
+        float gradient = (LEARNING_RATE/NUM_TRAIN_OBSERVATIONS) * sum;
+
+	    weights[j] -= gradient;
     }
 }
 
@@ -293,6 +290,7 @@ int main(int argc, char** argv){
         int epoch = 1;
       
         while(epoch <= NUM_EPOCHS){
+
             for (int i = 0; i < NUM_TRAIN_OBSERVATIONS; i++){
                 predictions[i] = hypothesis(weights, X_train[i]);
             }

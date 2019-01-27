@@ -354,7 +354,7 @@ int main(int argc, char **argv) {
             cout << "Error: Failed to allocate device memory! (weigths, "<<err <<")" << endl;
         }
         
-''        cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_TRAIN_OBSERVATIONS * sizeof(float), NULL, &err);
+        cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_TRAIN_OBSERVATIONS * sizeof(float), NULL, &err);
 
         if(err){
             cout << "Error: Failed to allocate device memory! (preds, "<<err <<")" << endl;
@@ -465,6 +465,7 @@ int main(int argc, char **argv) {
             printf("Error: Failed to set kernel arguments! %d\n", err);
             exit(EXIT_FAILURE);
         }
+
         auto start = chrono::system_clock::now();
 
         err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);

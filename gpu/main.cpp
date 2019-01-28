@@ -1,11 +1,11 @@
 /**
  * @file main.cpp
  * @author Daniel Andrade e Gabriel Gomes
- * @brief Reconhecedor de Expressões Faciais através de Regressão Logística
+ * @brief Reconhecedor de Expressões Faciais através de Regressão Logística - Versão GPU
  * @version 1.0
- * @date 2018-10-12
+ * @date 2019-28-01
  * 
- * @copyright Copyright (c) 2018
+ * @copyright Copyright (c) 2019
  * 
  */
 
@@ -30,15 +30,19 @@ int NUM_FEATURES = 128 * 128 + 1;   /// Quantidade de pixels + bias
 int NUM_TRAIN_OBSERVATIONS = 15640; /// Quantidade de observações de treino
 int NUM_TEST_OBSERVATIONS = 3730;   /// Quantidade de observações de teste
 int NUM_EPOCHS = 500;               /// Quantidade de épocas
-int NUM_ITERATIONS = 5;
+int NUM_ITERATIONS = 5;             /// Quantidade de vezes que o experimento será repetido
 float LEARNING_RATE = 0.001;            /// Taxa de Apredizado
 string OUTPUT_FILE_PREFIX = "results/"; /// Prefixo do arquivo de saída
-int LOCAL_WORK_SIZE = 16;
-int GLOBAL_WORK_SIZE = 1024;
+int LOCAL_WORK_SIZE = 256;
 
-/**Source: http://www.es.ele.tue.nl/~mwijtvliet/5KK73/?page=mmopencl**/
-long LoadOpenCLKernel(char const *path, char **buf)
-{
+/**
+ * @brief Carrega um kernel OpenCL em um buffer
+ * 
+ * @param path Caminho do arquivo contendo o kernel OpenCL
+ * @param Buffer onde o kernel será armazenado
+ * @source  http://www.es.ele.tue.nl/~mwijtvliet/5KK73/?page=mmopencl
+ **/
+long LoadOpenCLKernel(char const *path, char **buf){
     FILE *fp;
     size_t fsz;
     long off_end;
@@ -95,8 +99,7 @@ long LoadOpenCLKernel(char const *path, char **buf)
  * @param pixels_str String com os pixels separados por espaço
  * @param pixels Vetor de 48*48 espaços nos quais os pixels serão armazenados
  */
-void parsePixels(string pixels_str, float *pixels)
-{
+void parsePixels(string pixels_str, float *pixels){
     stringstream ss(pixels_str);
     float pixel;
     int i = 0;
@@ -137,15 +140,12 @@ void addToDataset(float *X, float *y, int index, int sex, float* pixels){
  * @param size Tamanho do vetor y
  * @param cost Custo do do erro da época atual
  */
-void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, int size, float cost)
-{
-    //cout << "done epoch #" <<epoch<<endl;
+void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, int size, float cost){
     float accuracy, precision, recall, f1;
     float tp = 0, tn = 0, fp = 0, fn = 0;
     int pred, real;
 
-    for (int i = 0; i < size; i++)
-    { ///calculando dados para matriz de confusão a partir do valor real e do valor predito
+    for (int i = 0; i < size; i++){ ///calculando dados para matriz de confusão a partir do valor real e do valor predito
         pred = round(predictions[i]);
         real = round(y[i]);
 
@@ -159,12 +159,14 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
             tp++;
     }
 
+    // Cálculo das métricas de avaliação
     accuracy = (tp + tn) / (tp + fp + fn + tn);
     precision = tp / (tp + fp);
     recall = tp / (tp + fn);
     f1 = (2 * recall * precision) / (recall + precision);
 
     cout << epoch << "," << accuracy << "," << precision << "," << recall << "," << f1 << "," << cost << endl;
+    outputFile << epoch << "," << accuracy << "," << precision << "," << recall << "," << f1 << "," << cost << endl;
 }
 
 /**
@@ -173,10 +175,8 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
  * @param argc Quantidade de argumentos
  * @param argv Vetor contendo o valor dos argumentos
  */
-void parse_args(int argc, char **argv)
-{
-    if (argc < 7)
-    {
+void parse_args(int argc, char **argv){
+    if (argc < 8){
         cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA" << endl;
         exit(EXIT_FAILURE);
     }
@@ -187,27 +187,19 @@ void parse_args(int argc, char **argv)
     LEARNING_RATE = atof(argv[4]);
     OUTPUT_FILE_PREFIX += argv[5];
     OUTPUT_FILE_PREFIX += "/";
-    LOCAL_WORK_SIZE = atof(argv[6]);
-    GLOBAL_WORK_SIZE = atof(argv[7]);
 }
 
 int main(int argc, char **argv) {
     parse_args(argc, argv);
     
-    float *X_train, *X_test, *weights;						
+    /// Alocação das estruturas para armazenamento do dataset
+    float *X_train, *X_test;						
     float *y_train, *y_test;	
 
     X_train = (float *) malloc(NUM_TRAIN_OBSERVATIONS * NUM_FEATURES * sizeof(float));
     X_test = (float *) malloc(NUM_TEST_OBSERVATIONS * NUM_FEATURES * sizeof(float));    			
     y_train = (float *)malloc(NUM_TRAIN_OBSERVATIONS * sizeof(float));		 
     y_test = (float *)malloc(NUM_TEST_OBSERVATIONS * sizeof(float));		
-
-    weights = (float *) malloc (NUM_FEATURES * sizeof(float));
-
-
-    for(int i = 0; i < NUM_FEATURES; i++){									
-        weights[i] = 0;
-    }
     
     ifstream trainFile, testFile;
     trainFile.open("../data/train.csv");
@@ -226,8 +218,8 @@ int main(int argc, char **argv) {
     string line;
     int index = 0, sex, pixelsIndex;
     float pixels[NUM_FEATURES - 1];
-	cout << "carregando treino" << endl;
-    while(getline(trainFile, line)){    // Leitura do arquivo de entrada (treino)
+
+    while(getline(trainFile, line)){    /// Carregamento do arquivo de entrada (treino)
         sex = line[0] - '0';
         pixelsIndex = line.find(",");
         string pixels_str = line.substr(pixelsIndex+1);
@@ -238,10 +230,10 @@ int main(int argc, char **argv) {
             index ++;
         }
     }
+
     index = 0;
 
-    cout << "carregando teste "<< endl;
-    while(getline(testFile, line)){    // Leitura do arquivo de entrada (teste)
+    while(getline(testFile, line)){    /// Carregamento do arquivo de entrada (teste)
         sex = line[0] - '0';
         
         pixelsIndex = line.find(",");
@@ -257,199 +249,218 @@ int main(int argc, char **argv) {
     trainFile.close();
     testFile.close(); 
     
+    /******** Variáveis iniciais do OpenCL ********/
+    size_t localWorkSize = LOCAL_WORK_SIZE;
+    size_t globalWorkSize = localWorkSize;
+
     int err;
-    /******** Initial Variables ********/
+
     cl_uint dev_cnt = 0;
-   clGetPlatformIDs(0, 0, &dev_cnt);
-	
-   cl_platform_id platform_ids[100];
-   clGetPlatformIDs(dev_cnt, platform_ids, NULL);
-	
-   // Connect to a compute device
-   cl_device_id device_id;             // compute device id 
-   cl_context context;                 // compute context
-   cl_command_queue commands;          // compute command queue
-   cl_program program;                 // compute program
-   cl_kernel kernel;          
+    clGetPlatformIDs(0, 0, &dev_cnt);
 
-   int gpu = 1;
+    cl_platform_id platform_ids[100];
+    clGetPlatformIDs(dev_cnt, platform_ids, NULL);
 
-   err = clGetDeviceIDs(platform_ids[0], gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
-   if (err != CL_SUCCESS)
-   {
-       printf("Error: Failed to create a device group!\n");
-       //return EXIT_FAILURE;
-   }
-  
-   // Create a compute context 
-   context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
-   if (!context)
-   {
-       printf("Error: Failed to create a compute context!\n");
-       //return EXIT_FAILURE;
-   }
+    cl_device_id device_id;
+    cl_context context;
+    cl_command_queue commands;
+    cl_program program;
+    cl_kernel kernel;          
 
-   // Create a command commands
-   commands = clCreateCommandQueue(context, device_id, 0, &err);
-   if (!commands)
-   {
-       printf("Error: Failed to create a command commands!\n");
-       //return EXIT_FAILURE;
-   }
+    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_GPU, 1, &device_id, NULL); /// Realização da conexão com a GPU
+    if (err != CL_SUCCESS){
+        cout << "Error: Failed to create a device group!" << endl;
+        exit(EXIT_FAILURE);
+    }
 
-   // Create the compute program from the source file
-   char *KernelSource;
-   long lFileSize;
+    context = clCreateContext(0, 1, &device_id, NULL, NULL, &err); /// Criação do contexto
+    if (!context){
+        cout << "Error: Failed to create a compute context!" << endl;
+        exit(EXIT_FAILURE);
+    }
 
-   lFileSize = LoadOpenCLKernel("kernel.cl", &KernelSource);
-   if( lFileSize < 0L ) {
-       perror("File read failed");
-       //return 1;
-   }
+    // Create a command commands
+    commands = clCreateCommandQueue(context, device_id, 0, &err); /// Criação da fila de comandos
+    if (!commands){
+        cout << "Error: Failed to create a command commands!" << endl;
+        exit(EXIT_FAILURE);
+    }
 
-   program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &err);
-   if (!program)
-   {
-       printf("Error: Failed to create compute program!\n");
-       //return EXIT_FAILURE;
-   }
+    /// Criação do programa através do arquivo que descreve o kernel que será utilizado
+    char *KernelSource;
+    long lFileSize;
 
-   // Build the program executable
-   err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-   if (err != CL_SUCCESS)
-   {
-       size_t len;
-       char buffer[2048];
-       printf("Error: Failed to build program executable!\n");
-       clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
-       printf("%s\n", buffer);
-       //exit(1);
-   }
+    lFileSize = LoadOpenCLKernel("kernel.cl", &KernelSource);
+    if( lFileSize < 0L ) {
+         cout << "File read failed" << endl;
+        exit(EXIT_FAILURE);
+    }
 
-   // Create the compute kernel in the program we wish to run
-   //
-   kernel = clCreateKernel(program, "logreg", &err);
-   if (!kernel || err != CL_SUCCESS)
-   {
-       printf("Error: Failed to create compute kernel!\n");
-       //exit(1);
-   }
+    program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &err);
+    if (!program){
+         cout << "Error: Failed to create compute program!" << endl;
+        return EXIT_FAILURE;
+    }
 
-    /******** Buffers *******/
-    int X_size = NUM_TRAIN_OBSERVATIONS * NUM_FEATURES * sizeof(float);
-    int y_size = NUM_TRAIN_OBSERVATIONS * sizeof(float);
+    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    if (err != CL_SUCCESS){
+        size_t len;
+        char buffer[2048];
+        cout << "Error: Failed to build program executable!" << endl;
+        clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+        cout <<  buffer << endl;
+        exit(EXIT_FAILURE);
+    }
 
-    cl_mem buffer_X_train = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, X_size, X_train, &err);
+
+    kernel = clCreateKernel(program, "logreg", &err); /// Criação do kernel que será executado no device
+    if (!kernel || err != CL_SUCCESS){
+        cout << "Error: Failed to create compute kernel!" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    /// Configuração dos buffers
+    int X_size = NUM_TRAIN_OBSERVATIONS * NUM_FEATURES * sizeof(float); /// Tamanho do buffer das amostras de treino
+    int y_size = NUM_TRAIN_OBSERVATIONS * sizeof(float); // Tamanho do buffer das marcações de treino
+
+    int X_size_test = NUM_TEST_OBSERVATIONS * NUM_FEATURES * sizeof(float); /// Tamanho do buffer das amostras de teste
+    int y_size_test = NUM_TEST_OBSERVATIONS * sizeof(float); // Tamanho do buffer das marcações de teste
+
+    cl_mem buffer_X_train = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, X_size, X_train, &err); /// Buffer das amostras de treino
+
+    if(err){
+        cout << "Error: Failed to allocate device memory! (X_train, " << err <<")" << endl;
+    }
+
+    cl_mem buffer_y_train = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, y_size, y_train, &err); /// Buffer das marcações de treino
+
+    if(err){
+        cout << "Error: Failed to allocate device memory! (y_train, " << err <<")" << endl;
+    }
+
+    cl_mem buffer_X_test = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, X_size_test, X_test, &err); /// Buffer das amostras de teste
 
     if(err){
         cout << "Error: Failed to allocate device memory! (X_train, "<<err <<")" << endl;
     }
-    
-    cl_mem buffer_y_train = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, y_size, y_train, &err);
 
-     if(err){
+    cl_mem buffer_y_test = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, y_size_test, y_test, &err); /// Buffer das marcações de teste
+
+    if(err){
         cout << "Error: Failed to allocate device memory! (y_train, "<<err <<")" << endl;
     }
-    
 
-    cl_mem buffer_weigths =  clCreateBuffer(context,  CL_MEM_READ_WRITE, NUM_FEATURES * sizeof(float), NULL, &err);
+    cl_mem buffer_weigths =  clCreateBuffer(context,  CL_MEM_READ_WRITE, NUM_FEATURES * sizeof(float), NULL, &err); /// Buffer dos pesos do algoritmo de regressão logística
 
-     if(err){
+    if(err){
         cout << "Error: Failed to allocate device memory! (weigths, "<<err <<")" << endl;
     }
-    
-    
-    cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE, y_size, NULL, &err);
 
-     if(err){
+
+    cl_mem buffer_predictions =  clCreateBuffer(context, CL_MEM_READ_WRITE, y_size, NULL, &err); /// Buffer para armazenar as predições realizadas pelo algoritmo
+
+    if(err){
         cout << "Error: Failed to allocate device memory! (preds, "<<err <<")" << endl;
     }
-    
-    cl_mem buffer_costs =  clCreateBuffer(context, CL_MEM_READ_WRITE, NUM_FEATURES * LOCAL_WORK_SIZE * sizeof(float), NULL, &err);
 
-     if(err){
-        cout << "Error: Failed to allocate device memory! (costs, "<<err <<")" << endl;
-    }
-    
+    if(!buffer_X_train                 || 
+       !buffer_y_train                 ||
+       !buffer_X_test                  || 
+       !buffer_y_test                  ||
+       !buffer_weigths                 ||
+       !buffer_predictions             ||
+       err != CL_SUCCESS){
+        
+        cout << "Error: Failed to allocate device memory!" << endl;
+        exit(EXIT_FAILURE);
+    }   
 
-
-    if(!buffer_X_train                  || 
-        !buffer_y_train                 ||
-        !buffer_weigths                 ||
-        !buffer_predictions             ||
-        !buffer_costs                   
-        ){
-        printf("Error: Failed to allocate device memory!\n");
-        cout << "x: "<<buffer_X_train << ", y: " << buffer_y_train << ", w: " << buffer_weigths << ", preds:" << buffer_predictions << " costs:" << buffer_costs << endl;
-        //exit(1);
-    }
-
-    if(err != CL_SUCCESS){
-            cout << "Erro escrita";
-    }
-
-    err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &buffer_X_train);
-    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &buffer_y_train);
-    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &buffer_weigths);
+    float *predictions = (float*) malloc(y_size);
+    /// Argumentos padrão do kernel
+    err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &buffer_weigths);
     err |= clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *) &buffer_predictions);
-    err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *) &buffer_costs);
+    err |= clSetKernelArg(kernel, 4, localWorkSize * NUM_FEATURES * sizeof(float), NULL);
     err |= clSetKernelArg(kernel, 5, sizeof(int), (void *) &NUM_FEATURES);
-    err |= clSetKernelArg(kernel, 6, sizeof(int), (void *) &NUM_TRAIN_OBSERVATIONS);
-    err |= clSetKernelArg(kernel, 7, sizeof(float), (void *) &LEARNING_RATE);
     err |= clSetKernelArg(kernel, 8, sizeof(float), (void *) &NUM_EPOCHS);
 
-
-    if (err != CL_SUCCESS)
-    {
-        printf("Error: Failed to set kernel arguments! %d\n", err);
-        //exit(1);
+    if (err != CL_SUCCESS){
+        cout << "Error: Failed to set kernel arguments! " << err << endl;
+        exit(EXIT_FAILURE);
     }
 
-    size_t localWorkSize[2], globalWorkSize[2];
+    /// Repete os experimentos por NUM_ITERATIONS vezes
+    for(int iterations= 0; iterations< NUM_ITERATIONS; iterations++){
+        cout << "Iteração "<< iterations << endl;
+        // Configuração dos argumentos para a realização do treino
+        err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &buffer_X_train);
+        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &buffer_y_train);
+        err |= clSetKernelArg(kernel, 6, sizeof(int), (void *) &NUM_TRAIN_OBSERVATIONS);
+        err |= clSetKernelArg(kernel, 7, sizeof(float), (void *) &LEARNING_RATE);
 
-    localWorkSize[0] = 256;
-    localWorkSize[1] = 256;
-    globalWorkSize[0] = 1024;
-    globalWorkSize[1] = 1024;
-
-    float *predictions = (float*) malloc(NUM_TRAIN_OBSERVATIONS * sizeof(float));
-
-    /******** End Buffers ********/
-    for(int rep= 0; rep< 5; rep++){
-        cout << "-->> REP "<< rep<< endl;
-        auto start = chrono::system_clock::now();
-
-        err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
-
-        if (err != CL_SUCCESS)
-        {
-            printf("Error: Failed to execute kernel! %d\n", err);
-            //exit(1);
+       
+        if (err != CL_SUCCESS){
+            cout << "Error: Failed to set kernel arguments! " << err << endl;
+            exit(EXIT_FAILURE);
         }
 
-        err = clFinish(commands);
+        auto start = chrono::system_clock::now();
+
+        /// Comando para a execução do treinamento
+        err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &globalWorkSize, &localWorkSize, 0, NULL, NULL);
+       
+        if (err != CL_SUCCESS){
+            cout << "Error: Failed to execute kernel (train)! " << err << endl;
+            exit(EXIT_FAILURE);
+        }
+
+        err = clFinish(commands); /// Aguarda até que o kernel tenha sido executado
+
+        if(err){
+            cout << "Error while running kernel (train). Error code: "<< err << endl;
+        }
 
         auto end = chrono::system_clock::now(); // Fim da contagem do tempo de cômputo
         long elapsed = chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        
+        
+        /// Configuração dos argumentos para a realização do teste
+        float TEST_LEARNING_RATE = -1;
+        err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &buffer_X_test);
+        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &buffer_y_test);
+        err |= clSetKernelArg(kernel, 6, sizeof(int), (void *) &NUM_TEST_OBSERVATIONS);
+        err |= clSetKernelArg(kernel, 7, sizeof(float), (void *) &TEST_LEARNING_RATE);
 
 
-        if(err){
-            cout << "Error while running kernel. Error code: "<< err << endl;
+        /// Comandos para execução do teste
+        err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &globalWorkSize, &localWorkSize, 0, NULL, NULL);
+  
+        if (err != CL_SUCCESS){
+            cout << "Error: Failed to execute kernel (test)! " << err << endl;
+            exit(EXIT_FAILURE);
         }
 
+        err = clFinish(commands); /// Aguarda até que o kernel tenha sido executado
 
-        err = clEnqueueReadBuffer(commands, buffer_predictions, CL_TRUE, 0, NUM_TRAIN_OBSERVATIONS * sizeof(float), predictions, 0, NULL, NULL);
+        if(err){
+            cout << "Error while running kernel (test). Error code: "<< err << endl;
+        }
+
+        /// Leitura das predições realizadas durante o teste
+        err = clEnqueueReadBuffer(commands, buffer_predictions, CL_TRUE, 0, y_size, predictions, 0, NULL, NULL);
+
+        cout<<" check " << predictions[0] << endl;
 
         if(err != CL_SUCCESS){
             cout << "Error while getting output" << endl;
         }
 
+        /// Gravação das estatísticas de teste
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         ofstream outputFile;
-        string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de treino
+        string outputFileName = OUTPUT_FILE_PREFIX+"output_" +to_string(NUM_EPOCHS) + "epochs_" + to_string(NUM_TRAIN_OBSERVATIONS) + "train_" + to_string(NUM_TEST_OBSERVATIONS) + "test_@"+to_string(seed)+".txt"; /// Construção do título do arquivo de saída com as estatísticas de teste
         outputFile.open(outputFileName);
         outputFile << "epoch,accuracy,precision,recall,f1,cost" << endl; // Escreve o cabeçalho dos dados no arquivo de saída
-        saveEpoch(0, outputFile, predictions, y_train, NUM_TRAIN_OBSERVATIONS, -1);
+        saveEpoch(-1, outputFile, predictions, y_test, NUM_TEST_OBSERVATIONS, -1);
         outputFile.close();
 
         ofstream timeFile;
@@ -459,22 +470,24 @@ int main(int argc, char **argv) {
         outputFile.close();
     }
 
-   clReleaseMemObject(buffer_X_train);
-   clReleaseMemObject(buffer_y_train);
-   clReleaseMemObject(buffer_weigths);
-   clReleaseMemObject(buffer_predictions);
-   clReleaseMemObject(buffer_costs);
+    /// Liberação dos dados alocados utilizando o OpenCL
+    clReleaseMemObject(buffer_X_train);
+    clReleaseMemObject(buffer_y_train);
+    clReleaseMemObject(buffer_X_test);
+    clReleaseMemObject(buffer_y_test);
+    clReleaseMemObject(buffer_weigths);
+    clReleaseMemObject(buffer_predictions);
 
-   clReleaseProgram(program);
-   clReleaseKernel(kernel);
-   clReleaseCommandQueue(commands);
-   clReleaseContext(context);
-   
-   free(X_test);
-   free(X_train);
-   free(y_test);
-   free(y_train);
-   free(weights);
-   free(predictions);
+    clReleaseProgram(program);
+    clReleaseKernel(kernel);
+    clReleaseCommandQueue(commands);
+    clReleaseContext(context); 
+
+    /// Liberação dos dados alocados dinamicamente
+    free(X_test);
+    free(X_train);
+    free(y_test);
+    free(y_train);
+    free(predictions);
 
 }

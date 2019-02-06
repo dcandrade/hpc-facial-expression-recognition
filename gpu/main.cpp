@@ -3,7 +3,7 @@
  * @author Daniel Andrade e Gabriel Gomes
  * @brief Reconhecedor de Expressões Faciais através de Regressão Logística - Versão GPU
  * @version 1.0
- * @date 2019-28-01
+ * @date 2019-05-02
  * 
  * @copyright Copyright (c) 2019
  * 
@@ -176,7 +176,7 @@ void saveEpoch(int epoch, ofstream &outputFile, float *predictions, float *y, in
  * @param argv Vetor contendo o valor dos argumentos
  */
 void parse_args(int argc, char **argv){
-    if (argc < 8){
+    if (argc < 7){
         cout << "Utilização: <executavel> QTD_TREINO QTD_TESTE NUM_EPOCAS TAXA_APRENDIZADO PREFIXO_ARQUIVO_SAIDA" << endl;
         exit(EXIT_FAILURE);
     }
@@ -187,6 +187,7 @@ void parse_args(int argc, char **argv){
     LEARNING_RATE = atof(argv[4]);
     OUTPUT_FILE_PREFIX += argv[5];
     OUTPUT_FILE_PREFIX += "/";
+    LOCAL_WORK_SIZE = atof(argv[6]);
 }
 
 int main(int argc, char **argv) {
@@ -251,7 +252,7 @@ int main(int argc, char **argv) {
     
     /******** Variáveis iniciais do OpenCL ********/
     size_t localWorkSize = LOCAL_WORK_SIZE;
-    size_t globalWorkSize = localWorkSize;
+    size_t globalWorkSize = LOCAL_WORK_SIZE;
 
     int err;
 
@@ -326,25 +327,25 @@ int main(int argc, char **argv) {
     int X_size_test = NUM_TEST_OBSERVATIONS * NUM_FEATURES * sizeof(float); /// Tamanho do buffer das amostras de teste
     int y_size_test = NUM_TEST_OBSERVATIONS * sizeof(float); // Tamanho do buffer das marcações de teste
 
-    cl_mem buffer_X_train = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, X_size, X_train, &err); /// Buffer das amostras de treino
+    cl_mem buffer_X_train = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, X_size, X_train, &err); /// Buffer das amostras de treino
 
     if(err){
         cout << "Error: Failed to allocate device memory! (X_train, " << err <<")" << endl;
     }
 
-    cl_mem buffer_y_train = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, y_size, y_train, &err); /// Buffer das marcações de treino
+    cl_mem buffer_y_train = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, y_size, y_train, &err); /// Buffer das marcações de treino
 
     if(err){
         cout << "Error: Failed to allocate device memory! (y_train, " << err <<")" << endl;
     }
 
-    cl_mem buffer_X_test = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, X_size_test, X_test, &err); /// Buffer das amostras de teste
+    cl_mem buffer_X_test = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, X_size_test, X_test, &err); /// Buffer das amostras de teste
 
     if(err){
         cout << "Error: Failed to allocate device memory! (X_train, "<<err <<")" << endl;
     }
 
-    cl_mem buffer_y_test = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, y_size_test, y_test, &err); /// Buffer das marcações de teste
+    cl_mem buffer_y_test = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, y_size_test, y_test, &err); /// Buffer das marcações de teste
 
     if(err){
         cout << "Error: Failed to allocate device memory! (y_train, "<<err <<")" << endl;
@@ -447,8 +448,6 @@ int main(int argc, char **argv) {
 
         /// Leitura das predições realizadas durante o teste
         err = clEnqueueReadBuffer(commands, buffer_predictions, CL_TRUE, 0, y_size, predictions, 0, NULL, NULL);
-
-        cout<<" check " << predictions[0] << endl;
 
         if(err != CL_SUCCESS){
             cout << "Error while getting output" << endl;

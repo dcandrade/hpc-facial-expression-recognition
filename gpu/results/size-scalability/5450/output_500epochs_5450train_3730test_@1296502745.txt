@@ -1,0 +1,2 @@
+epoch,accuracy,precision,recall,f1,cost
+-1,0.679088,1,0.577331,0.732035,-1

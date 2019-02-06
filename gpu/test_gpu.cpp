@@ -373,6 +373,14 @@ int main(int argc, char** argv){
             }
             printf(")\n");
 
+            error = clGetDeviceInfo(device[j], CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(size_t), &size, NULL);
+
+            printf("\t\tPreferred vector width (float): %ld\n", size);
+
+
             printf("\t-------------------------\n");
+
+        
+
         }
 }

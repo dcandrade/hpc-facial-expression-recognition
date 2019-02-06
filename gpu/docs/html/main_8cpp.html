@@ -1,0 +1,562 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+<meta name="generator" content="Doxygen 1.8.15"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>[CAD] Classificador de Expressões Faciais Serial: Referência ao ficheiro main.cpp</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  <td id="projectalign" style="padding-left: 0.5em;">
+   <div id="projectname">[CAD] Classificador de Expressões Faciais Serial
+   &#160;<span id="projectnumber">1.0</span>
+   </div>
+   <div id="projectbrief">Classificador de Expressões Faciais utilizando regressão logística em uma abordagem serial desenvolvido para a disciplina de Computação de Alto Desempenho - UEFS 2018.2</div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- Gerado por Doxygen 1.8.15 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+var searchBox = new SearchBox("searchBox", "search",false,'Localizar');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(function() {
+  initMenu('',true,false,'search.php','Localizar');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#func-members">Funções</a> &#124;
+<a href="#var-members">Variáveis</a>  </div>
+  <div class="headertitle">
+<div class="title">Referência ao ficheiro main.cpp</div>  </div>
+</div><!--header-->
+<div class="contents">
+
+<p>Reconhecedor de Expressões Faciais através de Regressão Logística - Versão GPU.  
+<a href="#details">Mais...</a></p>
+<div class="textblock"><code>#include &lt;bits/stdc++.h&gt;</code><br />
+<code>#include &lt;fstream&gt;</code><br />
+<code>#include &lt;iostream&gt;</code><br />
+<code>#include &lt;string&gt;</code><br />
+<code>#include &lt;sstream&gt;</code><br />
+<code>#include &lt;math.h&gt;</code><br />
+<code>#include &lt;time.h&gt;</code><br />
+<code>#include &lt;CL/cl.h&gt;</code><br />
+</div><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Funções</h2></td></tr>
+<tr class="memitem:a9b49c21ebe4681a3d2c0ae71541cc7bc"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a9b49c21ebe4681a3d2c0ae71541cc7bc">LoadOpenCLKernel</a> (char const *path, char **buf)</td></tr>
+<tr class="memdesc:a9b49c21ebe4681a3d2c0ae71541cc7bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Carrega um kernel OpenCL em um buffer.  <a href="#a9b49c21ebe4681a3d2c0ae71541cc7bc">Mais...</a><br /></td></tr>
+<tr class="separator:a9b49c21ebe4681a3d2c0ae71541cc7bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3fce1789820318b1e3eb0547aa7322c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#ad3fce1789820318b1e3eb0547aa7322c">parsePixels</a> (string pixels_str, float *pixels)</td></tr>
+<tr class="memdesc:ad3fce1789820318b1e3eb0547aa7322c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Popula e normaliza um vetor de floats com os pixels presentes numa string.  <a href="#ad3fce1789820318b1e3eb0547aa7322c">Mais...</a><br /></td></tr>
+<tr class="separator:ad3fce1789820318b1e3eb0547aa7322c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7746696a00891155f054e4ee30ddfdf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#ae7746696a00891155f054e4ee30ddfdf">addToDataset</a> (float *X, float *y, int index, int sex, float *pixels)</td></tr>
+<tr class="separator:ae7746696a00891155f054e4ee30ddfdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae4575a8b393c86d4feb25f7de22f16c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#aae4575a8b393c86d4feb25f7de22f16c">saveEpoch</a> (int epoch, ofstream &amp;outputFile, float *predictions, float *y, int size, float cost)</td></tr>
+<tr class="memdesc:aae4575a8b393c86d4feb25f7de22f16c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Salva as informações de uma época no arquivo de saída.  <a href="#aae4575a8b393c86d4feb25f7de22f16c">Mais...</a><br /></td></tr>
+<tr class="separator:aae4575a8b393c86d4feb25f7de22f16c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51139c09a6089f2944ef8ed43e4840c2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a51139c09a6089f2944ef8ed43e4840c2">parse_args</a> (int argc, char **argv)</td></tr>
+<tr class="memdesc:a51139c09a6089f2944ef8ed43e4840c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Carrega os argumentos passados via linha de comando nas respectivas variáveis.  <a href="#a51139c09a6089f2944ef8ed43e4840c2">Mais...</a><br /></td></tr>
+<tr class="separator:a51139c09a6089f2944ef8ed43e4840c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c04138a5bfe5d72780bb7e82a18e627"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> (int argc, char **argv)</td></tr>
+<tr class="separator:a3c04138a5bfe5d72780bb7e82a18e627"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variáveis</h2></td></tr>
+<tr class="memitem:a6a91517f31a1df97f0d72c4385676a69"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a6a91517f31a1df97f0d72c4385676a69">NUM_FEATURES</a> = 128 * 128 + 1</td></tr>
+<tr class="separator:a6a91517f31a1df97f0d72c4385676a69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6dec9a66c9c197d43511677b0888083b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a6dec9a66c9c197d43511677b0888083b">NUM_TRAIN_OBSERVATIONS</a> = 15640</td></tr>
+<tr class="memdesc:a6dec9a66c9c197d43511677b0888083b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quantidade de pixels + bias.  <a href="#a6dec9a66c9c197d43511677b0888083b">Mais...</a><br /></td></tr>
+<tr class="separator:a6dec9a66c9c197d43511677b0888083b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2644408bee37a54749aa477957ab029"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#ae2644408bee37a54749aa477957ab029">NUM_TEST_OBSERVATIONS</a> = 3730</td></tr>
+<tr class="memdesc:ae2644408bee37a54749aa477957ab029"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quantidade de observações de treino.  <a href="#ae2644408bee37a54749aa477957ab029">Mais...</a><br /></td></tr>
+<tr class="separator:ae2644408bee37a54749aa477957ab029"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bb44a6d66c5ae996e1fc73c9e80a0d9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a2bb44a6d66c5ae996e1fc73c9e80a0d9">NUM_EPOCHS</a> = 500</td></tr>
+<tr class="memdesc:a2bb44a6d66c5ae996e1fc73c9e80a0d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quantidade de observações de teste.  <a href="#a2bb44a6d66c5ae996e1fc73c9e80a0d9">Mais...</a><br /></td></tr>
+<tr class="separator:a2bb44a6d66c5ae996e1fc73c9e80a0d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8534723a1428ae3a8e971886c31995f2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a8534723a1428ae3a8e971886c31995f2">NUM_ITERATIONS</a> = 5</td></tr>
+<tr class="memdesc:a8534723a1428ae3a8e971886c31995f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quantidade de épocas.  <a href="#a8534723a1428ae3a8e971886c31995f2">Mais...</a><br /></td></tr>
+<tr class="separator:a8534723a1428ae3a8e971886c31995f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57af96971827fa18ef8aa0dc629b9ce8"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a57af96971827fa18ef8aa0dc629b9ce8">LEARNING_RATE</a> = 0.001</td></tr>
+<tr class="memdesc:a57af96971827fa18ef8aa0dc629b9ce8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quantidade de vezes que o experimento será repetido.  <a href="#a57af96971827fa18ef8aa0dc629b9ce8">Mais...</a><br /></td></tr>
+<tr class="separator:a57af96971827fa18ef8aa0dc629b9ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c1b697b9d6322dcec785fa653a3b54c"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a2c1b697b9d6322dcec785fa653a3b54c">OUTPUT_FILE_PREFIX</a> = &quot;results/&quot;</td></tr>
+<tr class="memdesc:a2c1b697b9d6322dcec785fa653a3b54c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Taxa de Apredizado.  <a href="#a2c1b697b9d6322dcec785fa653a3b54c">Mais...</a><br /></td></tr>
+<tr class="separator:a2c1b697b9d6322dcec785fa653a3b54c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f486e328bf7273ebb5b49f7b5f6cff4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8cpp.html#a3f486e328bf7273ebb5b49f7b5f6cff4">LOCAL_WORK_SIZE</a> = 256</td></tr>
+<tr class="memdesc:a3f486e328bf7273ebb5b49f7b5f6cff4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prefixo do arquivo de saída.  <a href="#a3f486e328bf7273ebb5b49f7b5f6cff4">Mais...</a><br /></td></tr>
+<tr class="separator:a3f486e328bf7273ebb5b49f7b5f6cff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">Descrição detalhada</h2>
+<div class="textblock"><p>Reconhecedor de Expressões Faciais através de Regressão Logística - Versão GPU. </p>
+<dl class="section author"><dt>Autor</dt><dd>Daniel Andrade e Gabriel Gomes </dd></dl>
+<dl class="section version"><dt>Versão</dt><dd>1.0 </dd></dl>
+<dl class="section date"><dt>Data</dt><dd>2019-05-02</dd></dl>
+<dl class="section copyright"><dt>Copyright</dt><dd>Copyright (c) 2019 </dd></dl>
+</div><h2 class="groupheader">Documentação das funções</h2>
+<a id="ae7746696a00891155f054e4ee30ddfdf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7746696a00891155f054e4ee30ddfdf">&#9670;&nbsp;</a></span>addToDataset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void addToDataset </td>
+          <td>(</td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>X</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>sex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>pixels</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parâmetros</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">X</td><td>Matriz de características </td></tr>
+    <tr><td class="paramname">y</td><td>Vetor de marcações (gabaritos) </td></tr>
+    <tr><td class="paramname">index</td><td>Índice na observação/marcação atual </td></tr>
+    <tr><td class="paramname">sex</td><td>Emoção normalizada (0 ou 1) </td></tr>
+    <tr><td class="paramname">pixels</td><td>Vetor de 48*48 posições contendo os valores normalizado de cada pixel </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a9b49c21ebe4681a3d2c0ae71541cc7bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b49c21ebe4681a3d2c0ae71541cc7bc">&#9670;&nbsp;</a></span>LoadOpenCLKernel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">long LoadOpenCLKernel </td>
+          <td>(</td>
+          <td class="paramtype">char const *&#160;</td>
+          <td class="paramname"><em>path</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Carrega um kernel OpenCL em um buffer. </p>
+<dl class="params"><dt>Parâmetros</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">path</td><td>Caminho do arquivo contendo o kernel OpenCL </td></tr>
+    <tr><td class="paramname">Buffer</td><td>onde o kernel será armazenado @source <a href="http://www.es.ele.tue.nl/~mwijtvliet/5KK73/?page=mmopencl">http://www.es.ele.tue.nl/~mwijtvliet/5KK73/?page=mmopencl</a> </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a3c04138a5bfe5d72780bb7e82a18e627"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c04138a5bfe5d72780bb7e82a18e627">&#9670;&nbsp;</a></span>main()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int main </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>argv</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Alocação das estruturas para armazenamento do dataset</p>
+<p>Carregamento do arquivo de entrada (treino)</p>
+<p>Carregamento do arquivo de entrada (teste)</p>
+<p>Realização da conexão com a GPU</p>
+<p>Criação do contexto</p>
+<p>Criação da fila de comandos</p>
+<p>Criação do programa através do arquivo que descreve o kernel que será utilizado</p>
+<p>Criação do kernel que será executado no device</p>
+<p>Configuração dos buffers</p>
+<p>Tamanho do buffer das amostras de treino</p>
+<p>Tamanho do buffer das amostras de teste</p>
+<p>Buffer das amostras de treino</p>
+<p>Buffer das marcações de treino</p>
+<p>Buffer das amostras de teste</p>
+<p>Buffer das marcações de teste</p>
+<p>Buffer dos pesos do algoritmo de regressão logística</p>
+<p>Buffer para armazenar as predições realizadas pelo algoritmo</p>
+<p>Argumentos padrão do kernel</p>
+<p>Repete os experimentos por NUM_ITERATIONS vezes</p>
+<p>Comando para a execução do treinamento</p>
+<p>Aguarda até que o kernel tenha sido executado</p>
+<p>Configuração dos argumentos para a realização do teste</p>
+<p>Comandos para execução do teste</p>
+<p>Aguarda até que o kernel tenha sido executado</p>
+<p>Leitura das predições realizadas durante o teste</p>
+<p>Gravação das estatísticas de teste</p>
+<p>Construção do título do arquivo de saída com as estatísticas de teste</p>
+<p>Liberação dos dados alocados utilizando o OpenCL</p>
+<p>Liberação dos dados alocados dinamicamente </p>
+
+</div>
+</div>
+<a id="a51139c09a6089f2944ef8ed43e4840c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a51139c09a6089f2944ef8ed43e4840c2">&#9670;&nbsp;</a></span>parse_args()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void parse_args </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>argv</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Carrega os argumentos passados via linha de comando nas respectivas variáveis. </p>
+<dl class="params"><dt>Parâmetros</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">argc</td><td>Quantidade de argumentos </td></tr>
+    <tr><td class="paramname">argv</td><td>Vetor contendo o valor dos argumentos </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ad3fce1789820318b1e3eb0547aa7322c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3fce1789820318b1e3eb0547aa7322c">&#9670;&nbsp;</a></span>parsePixels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void parsePixels </td>
+          <td>(</td>
+          <td class="paramtype">string&#160;</td>
+          <td class="paramname"><em>pixels_str</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>pixels</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Popula e normaliza um vetor de floats com os pixels presentes numa string. </p>
+<dl class="params"><dt>Parâmetros</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pixels_str</td><td>String com os pixels separados por espaço </td></tr>
+    <tr><td class="paramname">pixels</td><td>Vetor de 48*48 espaços nos quais os pixels serão armazenados </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aae4575a8b393c86d4feb25f7de22f16c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae4575a8b393c86d4feb25f7de22f16c">&#9670;&nbsp;</a></span>saveEpoch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void saveEpoch </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>epoch</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ofstream &amp;&#160;</td>
+          <td class="paramname"><em>outputFile</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>predictions</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>size</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>cost</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Salva as informações de uma época no arquivo de saída. </p>
+<dl class="params"><dt>Parâmetros</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">epoch</td><td>Número da época atual </td></tr>
+    <tr><td class="paramname">outputFile</td><td>Arquivo de saída </td></tr>
+    <tr><td class="paramname">predictions</td><td>Predições atuais </td></tr>
+    <tr><td class="paramname">y</td><td>Marcação das observações </td></tr>
+    <tr><td class="paramname">size</td><td>Tamanho do vetor y </td></tr>
+    <tr><td class="paramname">cost</td><td>Custo do do erro da época atual </td></tr>
+  </table>
+  </dd>
+</dl>
+<p>calculando dados para matriz de confusão a partir do valor real e do valor predito </p>
+
+</div>
+</div>
+<h2 class="groupheader">Documentação das variáveis</h2>
+<a id="a57af96971827fa18ef8aa0dc629b9ce8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57af96971827fa18ef8aa0dc629b9ce8">&#9670;&nbsp;</a></span>LEARNING_RATE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float LEARNING_RATE = 0.001</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Quantidade de vezes que o experimento será repetido. </p>
+
+</div>
+</div>
+<a id="a3f486e328bf7273ebb5b49f7b5f6cff4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f486e328bf7273ebb5b49f7b5f6cff4">&#9670;&nbsp;</a></span>LOCAL_WORK_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int LOCAL_WORK_SIZE = 256</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Prefixo do arquivo de saída. </p>
+
+</div>
+</div>
+<a id="a2bb44a6d66c5ae996e1fc73c9e80a0d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2bb44a6d66c5ae996e1fc73c9e80a0d9">&#9670;&nbsp;</a></span>NUM_EPOCHS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int NUM_EPOCHS = 500</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Quantidade de observações de teste. </p>
+
+</div>
+</div>
+<a id="a6a91517f31a1df97f0d72c4385676a69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a91517f31a1df97f0d72c4385676a69">&#9670;&nbsp;</a></span>NUM_FEATURES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int NUM_FEATURES = 128 * 128 + 1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8534723a1428ae3a8e971886c31995f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8534723a1428ae3a8e971886c31995f2">&#9670;&nbsp;</a></span>NUM_ITERATIONS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int NUM_ITERATIONS = 5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Quantidade de épocas. </p>
+
+</div>
+</div>
+<a id="ae2644408bee37a54749aa477957ab029"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2644408bee37a54749aa477957ab029">&#9670;&nbsp;</a></span>NUM_TEST_OBSERVATIONS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int NUM_TEST_OBSERVATIONS = 3730</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Quantidade de observações de treino. </p>
+
+</div>
+</div>
+<a id="a6dec9a66c9c197d43511677b0888083b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6dec9a66c9c197d43511677b0888083b">&#9670;&nbsp;</a></span>NUM_TRAIN_OBSERVATIONS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int NUM_TRAIN_OBSERVATIONS = 15640</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Quantidade de pixels + bias. </p>
+
+</div>
+</div>
+<a id="a2c1b697b9d6322dcec785fa653a3b54c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c1b697b9d6322dcec785fa653a3b54c">&#9670;&nbsp;</a></span>OUTPUT_FILE_PREFIX</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">string OUTPUT_FILE_PREFIX = &quot;results/&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Taxa de Apredizado. </p>
+
+</div>
+</div>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+Gerado por &#160;<a href="http://www.doxygen.org/index.html">
+<img class="footer" src="doxygen.png" alt="doxygen"/>
+</a> 1.8.15
+</small></address>
+</body>
+</html>

@@ -1,3 +1,13 @@
+/**
+ * @file kernel.cl
+ * @author Daniel Andrade e Gabriel Gomes
+ * @brief Reconhecedor de Expressões Faciais através de Regressão Logística - Kernel GPU
+ * @version 1.0
+ * @date 2019-05-02
+ * 
+ * @copyright Copyright (c) 2019
+ * 
+ */
 __kernel void logreg(
     __global float* X,
     __global float* y,
@@ -15,7 +25,6 @@ __kernel void logreg(
    const int startIndex = NUM_OBSERVATIONS/NUM_WORK_ITEMS * tx; /// Índice da primeira amostra pela qual a thread (work-item) atual é responsável (cada thread é responsável por NUM_OBSERVATIONS/NUM_WORK_ITEMS amostras)
    const int startFeatureIndex = NUM_FEATURES/NUM_WORK_ITEMS * tx;
 
-
     if(LEARNING_RATE > 0){ /// Executa no modo de treinamento
         /// Inicialização dos pesos
         for(int j = 0; j < NUM_FEATURES/NUM_WORK_ITEMS; j++){
@@ -29,13 +38,15 @@ __kernel void logreg(
             for(int k = 0; k < NUM_FEATURES; k++){
                 partialGradients[tx*NUM_FEATURES + k] = 0;
             }
+            
+            barrier(CLK_LOCAL_MEM_FENCE);
 
             /// Cálculo das hipóteses e dos gradientes parciais
             for (int i = 0; i < NUM_OBSERVATIONS/NUM_WORK_ITEMS; i++){
                 float z = 0;
 
                 for (int j = 0; j < NUM_FEATURES; j++){
-                    z += X[(startIndex + i) * NUM_FEATURES + j] * weights[j];
+                    z += (X[(startIndex + i) * NUM_FEATURES + j] * weights[j]);
                 }
 
                 z = y[startIndex+i] - 1.0/(1.0+exp(-z));
@@ -69,7 +80,7 @@ __kernel void logreg(
             float z = 0;
 
             for (int j = 0; j < NUM_FEATURES; j++){
-                z += X[(startIndex + i) * NUM_FEATURES + j] * weights[j];
+                z += (X[(startIndex + i) * NUM_FEATURES + j] * weights[j]);
             }
 
             predictions[startIndex + i] =  1.0/(1.0+exp(-z));

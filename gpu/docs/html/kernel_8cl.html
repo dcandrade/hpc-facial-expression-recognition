@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+<meta name="generator" content="Doxygen 1.8.15"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>[CAD] Classificador de Expressões Faciais Serial: Referência ao ficheiro kernel.cl</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  <td id="projectalign" style="padding-left: 0.5em;">
+   <div id="projectname">[CAD] Classificador de Expressões Faciais Serial
+   &#160;<span id="projectnumber">1.0</span>
+   </div>
+   <div id="projectbrief">Classificador de Expressões Faciais utilizando regressão logística em uma abordagem serial desenvolvido para a disciplina de Computação de Alto Desempenho - UEFS 2018.2</div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- Gerado por Doxygen 1.8.15 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+var searchBox = new SearchBox("searchBox", "search",false,'Localizar');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(function() {
+  initMenu('',true,false,'search.php','Localizar');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#func-members">Funções</a>  </div>
+  <div class="headertitle">
+<div class="title">Referência ao ficheiro kernel.cl</div>  </div>
+</div><!--header-->
+<div class="contents">
+
+<p>Reconhecedor de Expressões Faciais através de Regressão Logística - Kernel GPU.  
+<a href="#details">Mais...</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Funções</h2></td></tr>
+<tr class="memitem:a14c323d684e549c57649342b0b54648b"><td class="memItemLeft" align="right" valign="top">__kernel void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="kernel_8cl.html#a14c323d684e549c57649342b0b54648b">logreg</a> (__global float *X, __global float *y, __global float *weights, __global float *predictions, __local float *partialGradients, int <a class="el" href="main_8cpp.html#a6a91517f31a1df97f0d72c4385676a69">NUM_FEATURES</a>, int NUM_OBSERVATIONS, float <a class="el" href="main_8cpp.html#a57af96971827fa18ef8aa0dc629b9ce8">LEARNING_RATE</a>, int <a class="el" href="main_8cpp.html#a2bb44a6d66c5ae996e1fc73c9e80a0d9">NUM_EPOCHS</a>)</td></tr>
+<tr class="separator:a14c323d684e549c57649342b0b54648b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">Descrição detalhada</h2>
+<div class="textblock"><p>Reconhecedor de Expressões Faciais através de Regressão Logística - Kernel GPU. </p>
+<dl class="section author"><dt>Autor</dt><dd>Daniel Andrade e Gabriel Gomes </dd></dl>
+<dl class="section version"><dt>Versão</dt><dd>1.0 </dd></dl>
+<dl class="section date"><dt>Data</dt><dd>2019-05-02</dd></dl>
+<dl class="section copyright"><dt>Copyright</dt><dd>Copyright (c) 2019 </dd></dl>
+</div><h2 class="groupheader">Documentação das funções</h2>
+<a id="a14c323d684e549c57649342b0b54648b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14c323d684e549c57649342b0b54648b">&#9670;&nbsp;</a></span>logreg()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">__kernel void logreg </td>
+          <td>(</td>
+          <td class="paramtype">__global float *&#160;</td>
+          <td class="paramname"><em>X</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">__global float *&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">__global float *&#160;</td>
+          <td class="paramname"><em>weights</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">__global float *&#160;</td>
+          <td class="paramname"><em>predictions</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">__local float *&#160;</td>
+          <td class="paramname"><em>partialGradients</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>NUM_FEATURES</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>NUM_OBSERVATIONS</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>LEARNING_RATE</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>NUM_EPOCHS</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Número identificador da thread (work-item) atual</p>
+<p>Quantidade de threads (work-items) na qual o kernel está sendo executado</p>
+<p>Índice da primeira amostra pela qual a thread (work-item) atual é responsável (cada thread é responsável por NUM_OBSERVATIONS/NUM_WORK_ITEMS amostras)</p>
+<p>Executa no modo de treinamento</p>
+<p>Inicialização dos pesos</p>
+<p>Reinicialização dos valores do gradiente</p>
+<p>Cálculo das hipóteses e dos gradientes parciais</p>
+<p>Barreira necessária porque a próxima etapa precisa de todos os gradientes parciais calculados</p>
+<p>Redução dos gradientes parciais</p>
+<p>Barreira necessária porque os pesos só podem ser atualizados quando todos os gradientes tiverem sido reduzidos</p>
+<p>Atualização dos pesos utilizando os gradientes</p>
+<p>Barreira necessária porque a próxima época só pode inciar quando todos os pesos já tiverem sido atualizados na memória global</p>
+<p>Executa no modo de teste</p>
+<p>Cálculo das predições </p>
+
+</div>
+</div>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+Gerado por &#160;<a href="http://www.doxygen.org/index.html">
+<img class="footer" src="doxygen.png" alt="doxygen"/>
+</a> 1.8.15
+</small></address>
+</body>
+</html>
